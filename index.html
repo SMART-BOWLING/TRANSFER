@@ -150,29 +150,35 @@ function callScript(functionName, data = null) {
         
         window[callbackName] = function(response) {
             delete window[callbackName];
-            document.body.removeChild(script);
-            if (response.error) {
+            if (document.body.contains(script)) {
+                document.body.removeChild(script);
+            }
+            if (response && response.error) {
                 reject(new Error(response.error));
             } else {
-                resolve(response.result);
+                resolve(response && response.result ? response.result : response);
             }
         };
         
         const params = new URLSearchParams();
         params.append('fn', functionName);
-        if (data) {
+        if (data !== null) {
             params.append('data', JSON.stringify(data));
         }
         params.append('callback', callbackName);
         
         const script = document.createElement('script');
         script.src = `${SCRIPT_URL}?${params.toString()}`;
+        script.onerror = () => {
+            delete window[callbackName];
+            reject(new Error('Network error'));
+        };
         document.body.appendChild(script);
         
         setTimeout(() => {
             if (window[callbackName]) {
                 delete window[callbackName];
-                reject(new Error('Timeout'));
+                reject(new Error('Request timeout'));
             }
         }, 30000);
     });
@@ -183,10 +189,15 @@ async function load(){
     
     try {
         const transfers = await callScript('getTransfers');
-        render(transfers);
+        if (Array.isArray(transfers)) {
+            render(transfers);
+        } else {
+            throw new Error('Неверный формат данных');
+        }
     } catch(error) {
+        console.error('Load error:', error);
         document.getElementById('list').innerHTML = 
-            '<div class="empty">Ошибка загрузки: ' + error.message + '</div>';
+            '<div class="empty">❌ Ошибка загрузки: ' + escapeHtml(error.message) + '</div>';
     }
 }
 
@@ -241,7 +252,7 @@ function render(transfers){
     const container = document.getElementById('list');
     
     if(!transfers || transfers.length === 0){
-        container.innerHTML = '<div class="empty">Нет перемещений</div>';
+        container.innerHTML = '<div class="empty">📭 Нет перемещений</div>';
         return;
     }
 
@@ -261,21 +272,36 @@ function render(transfers){
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
         const statusText = transfer.status === 'open' ? '● Активно' : '✓ Закрыто';
         
-        // Форматируем дату
-        const date = new Date(transfer.timestamp);
-        const dateStr = date.toLocaleString('ru-RU');
+        // Форматируем дату с проверкой
+        let dateStr = 'Дата не указана';
+        if (transfer.timestamp) {
+            try {
+                const date = new Date(transfer.timestamp);
+                if (!isNaN(date.getTime())) {
+                    dateStr = date.toLocaleString('ru-RU');
+                }
+            } catch(e) {
+                dateStr = transfer.timestamp;
+            }
+        }
         
         let closedInfo = '';
-        if(transfer.closedAt){
-            const closedDate = new Date(transfer.closedAt);
-            closedInfo = `<div class="meta">Закрыто: ${closedDate.toLocaleString('ru-RU')}</div>`;
+        if(transfer.closedAt && transfer.closedAt !== ''){
+            try {
+                const closedDate = new Date(transfer.closedAt);
+                if (!isNaN(closedDate.getTime())) {
+                    closedInfo = `<div class="meta">📅 Закрыто: ${closedDate.toLocaleString('ru-RU')}</div>`;
+                }
+            } catch(e) {
+                closedInfo = `<div class="meta">📅 Закрыто: ${transfer.closedAt}</div>`;
+            }
         }
 
         div.innerHTML = `
-            <b>${escapeHtml(transfer.part)}</b>
-            <div class="meta">📅 ${dateStr}</div>
-            <div class="meta">📍 Из: ${escapeHtml(transfer.from)}</div>
-            <div class="meta">🎯 В: ${escapeHtml(transfer.to)}</div>
+            <b>${escapeHtml(transfer.part || 'Без названия')}</b>
+            <div class="meta">📅 Создано: ${dateStr}</div>
+            <div class="meta">📍 Из: ${escapeHtml(transfer.from || '—')}</div>
+            <div class="meta">🎯 В: ${escapeHtml(transfer.to || '—')}</div>
             <div class="meta ${statusClass}">${statusText}</div>
             ${closedInfo}
             <div class="actions">
@@ -291,9 +317,10 @@ function render(transfers){
     });
 }
 
-// Защита от XSS
+// Защита от XSS с проверкой типа
 function escapeHtml(str){
-    if(!str) return '';
+    if (str === null || str === undefined) return '';
+    if (typeof str !== 'string') str = String(str);
     return str
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
