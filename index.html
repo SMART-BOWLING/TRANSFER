@@ -41,6 +41,11 @@ button{
     color:#fff;
     border:none;
     font-weight:600;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#374151;
 }
 
 /* заголовок */
@@ -55,6 +60,7 @@ h3{
     border-radius:12px;
     padding:12px;
     margin-bottom:10px;
+    background:#fff;
 }
 
 /* текст */
@@ -62,6 +68,17 @@ h3{
     font-size:14px;
     color:#444;
     margin:3px 0;
+}
+
+/* статусы */
+.status-open{
+    color:#f59e0b;
+    font-weight:600;
+}
+
+.status-closed{
+    color:#10b981;
+    font-weight:600;
 }
 
 /* кнопки */
@@ -76,6 +93,24 @@ h3{
     color:#111;
     border:none;
 }
+
+.secondary:hover{
+    background:#e5e7eb;
+}
+
+/* индикатор загрузки */
+.loading{
+    text-align:center;
+    color:#6b7280;
+    padding:20px;
+}
+
+/* пустое состояние */
+.empty{
+    text-align:center;
+    color:#9ca3af;
+    padding:20px;
+}
 </style>
 </head>
 
@@ -83,7 +118,7 @@ h3{
 
 <div class="wrapper">
 
-    <input id="part" placeholder="Деталь">
+    <input id="part" placeholder="Деталь" autocomplete="off">
 
     <select id="from">
         <option>BLOCKBUSTER</option>
@@ -97,73 +132,178 @@ h3{
         <option>LUCKY STRIKE KH</option>
     </select>
 
-    <button onclick="add()">Добавить</button>
+    <button onclick="add()">Добавить перемещение</button>
 
-    <h3>Активные</h3>
+    <h3>Активные и закрытые</h3>
     <div id="list"></div>
 
 </div>
 
 <script>
+// ВАШ URL ВЕБ-ПРИЛОЖЕНИЯ GOOGLE APPS SCRIPT
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyeWFpD7RiL0x8jXP08GTKCy5IfseVwzDnn1RJNJcInAOKHq89aUhK-04zlIzlAxR1K/exec';
 
-let data = [];
-
-function load(){
-    google.script.run.withSuccessHandler(res=>{
-        data = res;
-        render();
-    }).getTransfers();
-}
-
-function add(){
-    const val = part.value.trim();
-    if(!val) return;
-
-    google.script.run.withSuccessHandler(load).addTransfer({
-        part: val,
-        from: from.value,
-        to: to.value
+// Функция для вызова Google Apps Script
+function callScript(functionName, data = null) {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        window[callbackName] = function(response) {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            if (response.error) {
+                reject(new Error(response.error));
+            } else {
+                resolve(response.result);
+            }
+        };
+        
+        const params = new URLSearchParams();
+        params.append('fn', functionName);
+        if (data) {
+            params.append('data', JSON.stringify(data));
+        }
+        params.append('callback', callbackName);
+        
+        const script = document.createElement('script');
+        script.src = `${SCRIPT_URL}?${params.toString()}`;
+        document.body.appendChild(script);
+        
+        setTimeout(() => {
+            if (window[callbackName]) {
+                delete window[callbackName];
+                reject(new Error('Timeout'));
+            }
+        }, 30000);
     });
-
-    part.value = '';
 }
 
-function closeRow(row){
-    google.script.run.withSuccessHandler(load).closeTransfer(row);
+async function load(){
+    document.getElementById('list').innerHTML = '<div class="loading">Загрузка...</div>';
+    
+    try {
+        const transfers = await callScript('getTransfers');
+        render(transfers);
+    } catch(error) {
+        document.getElementById('list').innerHTML = 
+            '<div class="empty">Ошибка загрузки: ' + error.message + '</div>';
+    }
 }
 
-function delRow(row){
-    google.script.run.withSuccessHandler(load).deleteTransfer(row);
+async function add(){
+    const partInput = document.getElementById('part');
+    const val = partInput.value.trim();
+    
+    if(!val){
+        alert('Введите название детали');
+        return;
+    }
+
+    const fromSelect = document.getElementById('from');
+    const toSelect = document.getElementById('to');
+
+    try {
+        await callScript('addTransfer', {
+            part: val,
+            from: fromSelect.value,
+            to: toSelect.value
+        });
+        partInput.value = '';
+        load();
+    } catch(error) {
+        alert('Ошибка: ' + error.message);
+    }
 }
 
-function render(){
-    list.innerHTML = '';
+async function closeRow(row){
+    if(confirm('Закрыть это перемещение?')){
+        try {
+            await callScript('closeTransfer', row);
+            load();
+        } catch(error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+}
 
-    data.forEach(r=>{
+async function delRow(row){
+    if(confirm('Удалить запись навсегда?')){
+        try {
+            await callScript('deleteTransfer', row);
+            load();
+        } catch(error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+}
+
+function render(transfers){
+    const container = document.getElementById('list');
+    
+    if(!transfers || transfers.length === 0){
+        container.innerHTML = '<div class="empty">Нет перемещений</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    
+    // Сортируем: сначала активные, потом закрытые
+    const sorted = [...transfers].sort((a,b) => {
+        if(a.status === 'open' && b.status === 'closed') return -1;
+        if(a.status === 'closed' && b.status === 'open') return 1;
+        return new Date(b.timestamp) - new Date(a.timestamp);
+    });
+    
+    sorted.forEach(transfer => {
         const div = document.createElement('div');
         div.className = 'card';
 
-        div.innerHTML = `
-            <b>${r.part}</b>
-            <div class="meta">Из: ${r.from}</div>
-            <div class="meta">В: ${r.to}</div>
-            <div class="meta">Статус: ${r.status}</div>
+        const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
+        const statusText = transfer.status === 'open' ? '● Активно' : '✓ Закрыто';
+        
+        // Форматируем дату
+        const date = new Date(transfer.timestamp);
+        const dateStr = date.toLocaleString('ru-RU');
+        
+        let closedInfo = '';
+        if(transfer.closedAt){
+            const closedDate = new Date(transfer.closedAt);
+            closedInfo = `<div class="meta">Закрыто: ${closedDate.toLocaleString('ru-RU')}</div>`;
+        }
 
+        div.innerHTML = `
+            <b>${escapeHtml(transfer.part)}</b>
+            <div class="meta">📅 ${dateStr}</div>
+            <div class="meta">📍 Из: ${escapeHtml(transfer.from)}</div>
+            <div class="meta">🎯 В: ${escapeHtml(transfer.to)}</div>
+            <div class="meta ${statusClass}">${statusText}</div>
+            ${closedInfo}
             <div class="actions">
-                ${r.status === 'open'
-                    ? `<button onclick="closeRow(${r.row})">Закрыть</button>`
+                ${transfer.status === 'open'
+                    ? `<button onclick="closeRow(${transfer.row})">✓ Закрыть</button>`
                     : ''
                 }
-                <button class="secondary" onclick="delRow(${r.row})">Удалить</button>
+                <button class="secondary" onclick="delRow(${transfer.row})">🗑 Удалить</button>
             </div>
         `;
 
-        list.appendChild(div);
+        container.appendChild(div);
     });
 }
 
-load();
+// Защита от XSS
+function escapeHtml(str){
+    if(!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
+// Загружаем данные при открытии страницы
+window.addEventListener('load', load);
 </script>
 
 </body>
