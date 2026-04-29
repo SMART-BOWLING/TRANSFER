@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Учёт деталей</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    padding:16px;
+    font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    background:#fff;
+    color:#111;
+}
+
+/* контейнер */
+.wrapper{
+    max-width:600px;
+    margin:auto;
+}
+
+/* поля */
+input,select,button{
+    width:100%;
+    padding:12px;
+    margin-bottom:10px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    font-size:15px;
+}
+
+/* кнопка */
+button{
+    background:#1f2937;
+    color:#fff;
+    border:none;
+    font-weight:600;
+}
+
+/* заголовок */
+h3{
+    margin:20px 0 10px;
+    font-size:16px;
+}
+
+/* карточка */
+.card{
+    border:1px solid #eee;
+    border-radius:12px;
+    padding:12px;
+    margin-bottom:10px;
+}
+
+/* текст */
+.meta{
+    font-size:14px;
+    color:#444;
+    margin:3px 0;
+}
+
+/* кнопки */
+.actions{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+
+.secondary{
+    background:#f3f4f6;
+    color:#111;
+    border:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <input id="part" placeholder="Деталь">
+
+    <select id="from">
+        <option>BLOCKBUSTER</option>
+        <option>SKYMALL</option>
+        <option>LUCKY STRIKE KH</option>
+    </select>
+
+    <select id="to">
+        <option>BLOCKBUSTER</option>
+        <option>SKYMALL</option>
+        <option>LUCKY STRIKE KH</option>
+    </select>
+
+    <button onclick="add()">Добавить</button>
+
+    <h3>Активные</h3>
+    <div id="list"></div>
+
+</div>
+
+<script>
+
+let data = [];
+
+function load(){
+    google.script.run.withSuccessHandler(res=>{
+        data = res;
+        render();
+    }).getTransfers();
+}
+
+function add(){
+    const val = part.value.trim();
+    if(!val) return;
+
+    google.script.run.withSuccessHandler(load).addTransfer({
+        part: val,
+        from: from.value,
+        to: to.value
+    });
+
+    part.value = '';
+}
+
+function closeRow(row){
+    google.script.run.withSuccessHandler(load).closeTransfer(row);
+}
+
+function delRow(row){
+    google.script.run.withSuccessHandler(load).deleteTransfer(row);
+}
+
+function render(){
+    list.innerHTML = '';
+
+    data.forEach(r=>{
+        const div = document.createElement('div');
+        div.className = 'card';
+
+        div.innerHTML = `
+            <b>${r.part}</b>
+            <div class="meta">Из: ${r.from}</div>
+            <div class="meta">В: ${r.to}</div>
+            <div class="meta">Статус: ${r.status}</div>
+
+            <div class="actions">
+                ${r.status === 'open'
+                    ? `<button onclick="closeRow(${r.row})">Закрыть</button>`
+                    : ''
+                }
+                <button class="secondary" onclick="delRow(${r.row})">Удалить</button>
+            </div>
+        `;
+
+        list.appendChild(div);
+    });
+}
+
+load();
+
+</script>
+
+</body>
+</html>
