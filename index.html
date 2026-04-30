@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Учёт деталей - TRANSFER</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js"></script>
@@ -68,7 +68,7 @@ h3{
     color:#0f172a;
 }
 
-/* ========== НОВЫЙ МИНИМАЛИСТИЧНЫЙ СТИЛЬ КАРТОЧКИ: заголовок слева / значение справа ========== */
+/* ========== КАРТОЧКА: заголовок слева / значение справа ========== */
 .card{
     background:#ffffff;
     border:1px solid #edf2f7;
@@ -79,7 +79,6 @@ h3{
     box-shadow:0 1px 2px rgba(0,0,0,0.02);
 }
 
-/* табличная структура внутри карточки */
 .info-table{
     width:100%;
     border-collapse: collapse;
@@ -99,7 +98,6 @@ h3{
     vertical-align:top;
 }
 
-/* левая колонка — заголовок */
 .info-table td:first-child{
     font-weight:500;
     color:#334155;
@@ -108,7 +106,6 @@ h3{
     background-color:#fdfdfd;
 }
 
-/* правая колонка — значение */
 .info-table td:last-child{
     color:#0f172a;
     font-weight:470;
@@ -116,11 +113,9 @@ h3{
     word-break:break-word;
 }
 
-/* статусы остаются цветными */
 .status-open{
     color:#e67e22;
     font-weight:500;
-    background:transparent;
     display:inline-block;
 }
 
@@ -129,49 +124,80 @@ h3{
     font-weight:500;
 }
 
-/* кнопки действий */
+/* ========== КНОПКИ ДЕЙСТВИЙ: слева и справа на телефоне ========== */
 .actions{
     display:flex;
-    gap:10px;
-    justify-content:flex-end;
-    padding:12px 16px 16px 16px;
+    gap:12px;
+    padding:14px 16px 18px 16px;
     background:#ffffff;
     border-top:1px solid #f0f4f9;
-    margin-top:0;
+    justify-content: space-between; /* главное: кнопки по краям */
+    align-items: center;
 }
 
-.secondary{
-    background:#f1f5f9;
-    color:#1e293b;
-    border:none;
-    width:auto;
-    padding:8px 20px;
-    font-size:13px;
-    border-radius:40px;
-    font-weight:500;
+/* общий стиль для обеих кнопок */
+.action-btn {
+    flex: 1; /* равномерно занимают место, но при space-between будет отлично */
+    width: auto;
+    padding: 12px 8px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 44px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    border: none;
+    background: none;
+    min-width: 0; /* для flex-сжимаемости */
 }
 
-.secondary:hover{
-    background:#e2e8f0;
+/* кнопка ВЕРНУТЬ (зелёная, слева) */
+.close-btn {
+    background: #10b981;
+    color: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.close-btn{
-    background:#10b981;
-    width:auto;
-    padding:8px 20px;
-    font-size:13px;
-    border-radius:40px;
+.close-btn:hover {
+    background: #059669;
 }
 
-.close-btn:hover{
-    background:#059669;
+/* кнопка УДАЛИТЬ (светлая, справа) */
+.secondary-btn {
+    background: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
 }
 
-/* мета-блоки больше не нужны, но оставим для совместимости, не мешают */
-.meta{
-    font-size:14px;
-    color:#444;
-    margin:3px 0;
+.secondary-btn:hover {
+    background: #e2e8f0;
+}
+
+/* Адаптация под совсем маленькие экраны — отличные отступы */
+@media (max-width: 480px) {
+    .actions {
+        padding: 12px 14px 16px 14px;
+        gap: 10px;
+    }
+    .action-btn {
+        padding: 11px 6px;
+        font-size: 14px;
+    }
+    .info-table td {
+        padding: 12px 12px;
+    }
+}
+
+/* чтобы на десктопе выглядело аккуратно, тоже оставляем красивый баланс */
+@media (min-width: 600px) {
+    .actions {
+        justify-content: space-between;
+    }
+    .action-btn {
+        flex: 0 1 auto;
+        min-width: 100px;
+        padding: 10px 20px;
+    }
 }
 
 .loading{
@@ -342,16 +368,6 @@ h3{
     to {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
-    }
-}
-
-/* небольшая адаптация */
-@media (max-width: 500px) {
-    .info-table td {
-        padding: 12px 12px;
-    }
-    .actions {
-        padding: 10px 12px 14px 12px;
     }
 }
 </style>
@@ -594,7 +610,7 @@ async function delRowAsync(row){
     }
 }
 
-// Новая функция рендера: таблица (label / value) с разделительными линиями
+// Рендер с удобными кнопками (одна слева, другая справа) на телефоне
 function render(transfers){
     const container = document.getElementById('list');
     
@@ -615,7 +631,6 @@ function render(transfers){
         const div = document.createElement('div');
         div.className = 'card';
 
-        // Форматирование дат
         let dateStr = 'Дата не указана';
         if (transfer.timestamp) {
             try {
@@ -629,7 +644,6 @@ function render(transfers){
         }
         
         let closedInfoStr = '';
-        let closedRaw = '';
         if(transfer.closedAt && transfer.closedAt !== ''){
             try {
                 const closedDate = new Date(transfer.closedAt);
@@ -639,13 +653,11 @@ function render(transfers){
             } catch(e) {
                 closedInfoStr = transfer.closedAt;
             }
-            closedRaw = closedInfoStr;
         }
         
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
         const statusText = transfer.status === 'open' ? '● Активно' : '✓ Закрыто';
         
-        // Создаём таблицу с парами "заголовок слева — значение справа", разделительные линии через border-bottom
         const table = document.createElement('table');
         table.className = 'info-table';
         
@@ -658,18 +670,17 @@ function render(transfers){
             { label: 'Статус', value: `<span class="${statusClass}">${statusText}</span>` }
         ];
         
-        if (closedRaw) {
-            rowsData.push({ label: 'Дата закрытия', value: closedRaw });
+        if (closedInfoStr) {
+            rowsData.push({ label: 'Дата закрытия', value: closedInfoStr });
         }
         
-        // Заполняем строки таблицы
         rowsData.forEach(rowItem => {
             const tr = document.createElement('tr');
             const tdLabel = document.createElement('td');
             tdLabel.textContent = rowItem.label;
             const tdValue = document.createElement('td');
             if (rowItem.label === 'Статус') {
-                tdValue.innerHTML = rowItem.value; // вставляем span с цветом
+                tdValue.innerHTML = rowItem.value;
             } else {
                 tdValue.textContent = rowItem.value;
             }
@@ -680,33 +691,71 @@ function render(transfers){
         
         div.appendChild(table);
         
-        // Блок с кнопками действий
+        // --- НОВЫЙ БЛОК ДЕЙСТВИЙ: кнопки расположены слева (Вернуть) и справа (Удалить) ---
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
         
         if (transfer.status === 'open') {
             const returnBtn = document.createElement('button');
             returnBtn.textContent = 'Вернуть';
-            returnBtn.className = 'close-btn';
-            returnBtn.onclick = () => closeTransferAsync(
-                transfer.row,
-                transfer.partNumber || '',
-                transfer.from || '',
-                transfer.to || '',
-                transfer.quantity
-            );
+            returnBtn.className = 'action-btn close-btn';
+            returnBtn.onclick = (e) => {
+                e.stopPropagation();
+                closeTransferAsync(
+                    transfer.row,
+                    transfer.partNumber || '',
+                    transfer.from || '',
+                    transfer.to || '',
+                    transfer.quantity
+                );
+            };
             actionsDiv.appendChild(returnBtn);
+        } else {
+            // Для закрытых записей кнопка "Вернуть" не показывается, но для сохранения симметрии можно вставить пустышку? 
+            // Но по дизайну закрытые имеют только Удалить, и чтобы кнопка удаления была справа, 
+            // сделаем так: если нет Вернуть, то добавим невидимый блок? Лучше чтобы удаление было справа.
+            // Чтобы визуально удаление было с краю, просто добавим удаление справа, а слева ничего – всё равно будет выглядеть нормально.
+            // Но чтобы кнопка удаления прилипала к правому краю, применим margin-left: auto у secondary-btn.
+            // Однако зададим стиль: если нет левой кнопки, то правую нужно выровнять вправо.
+            // Упрощённо: добавим флекс-контейнер и зададим secondary-btn стиль margin-left: auto, когда нет пары.
+            // Ниже реализуем логику в JS.
         }
         
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Удалить';
-        deleteBtn.className = 'secondary';
-        deleteBtn.onclick = () => delRowAsync(transfer.row);
-        actionsDiv.appendChild(deleteBtn);
+        deleteBtn.className = 'action-btn secondary-btn';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            delRowAsync(transfer.row);
+        };
+        
+        // Логика позиционирования: если есть кнопка Вернуть, обе уже встанут по краям через justify-content: space-between
+        // Если кнопки Вернуть нет, то удаление должно быть прижато к правому краю
+        if (transfer.status !== 'open') {
+            // для закрытых записей: только удаление, выравниваем вправо
+            deleteBtn.style.marginLeft = 'auto';
+            deleteBtn.style.flex = '0 0 auto';
+            actionsDiv.appendChild(deleteBtn);
+        } else {
+            // для активных: обе кнопки уже добавлены, и благодаря space-between они разойдутся
+            actionsDiv.appendChild(deleteBtn);
+        }
+        
+        // Если active и кнопка Вернуть уже вставлена до удаления, то после добавления удаления всё корректно.
+        // Важно: на случай если transfer.status === 'open', returnBtn уже есть, deleteBtn добавляем следом. space-between разведёт по краям.
+        // Нужно убедиться что для open сценария мы добавили returnBtn ранее
+        if (transfer.status === 'open') {
+            // returnBtn уже добавлен в actionsDiv, просто добавляем deleteBtn и всё прекрасно встанет.
+            // Но returnBtn мы добавили выше. Check: выше есть if(open) создали returnBtn и добавили. Потом добавили deleteBtn.
+            // Всё верно. Для красоты гарантируем порядок.
+        }
         
         div.appendChild(actionsDiv);
         container.appendChild(div);
     });
+    
+    // Дополнительный фикс для закрытых записей, чтобы кнопка "Удалить" чётко справа (margin-left:auto уже добавлен)
+    // Также перепроверим для активных: кнопки имеют разные классы, но space-between обеспечивает расположение.
 }
 
 function escapeHtml(str){
