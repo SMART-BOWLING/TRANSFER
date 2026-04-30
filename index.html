@@ -131,49 +131,49 @@ h3{
     padding:14px 16px 18px 16px;
     background:#ffffff;
     border-top:1px solid #f0f4f9;
-    justify-content: space-between; /* главное: кнопки по краям */
+    justify-content: space-between;
     align-items: center;
 }
 
-/* общий стиль для обеих кнопок */
+/* общий стиль для обеих кнопок - скругление 10px (не слишком большое) */
 .action-btn {
-    flex: 1; /* равномерно занимают место, но при space-between будет отлично */
+    flex: 1;
     width: auto;
     padding: 12px 8px;
     font-size: 15px;
     font-weight: 500;
-    border-radius: 44px;
+    border-radius: 10px;  /* уменьшенное скругление */
     text-align: center;
     cursor: pointer;
     transition: 0.2s;
     border: none;
-    background: none;
-    min-width: 0; /* для flex-сжимаемости */
+    min-width: 0;
 }
 
-/* кнопка ВЕРНУТЬ (зелёная, слева) */
+/* кнопка ВЕРНУТЬ - синий цвет (как основной акцент) */
 .close-btn {
-    background: #10b981;
+    background: #2563eb;  /* насыщенный синий */
     color: white;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .close-btn:hover {
-    background: #059669;
+    background: #1d4ed8;  /* более тёмный синий при наведении */
 }
 
-/* кнопка УДАЛИТЬ (светлая, справа) */
+/* кнопка УДАЛИТЬ - светлая, тоже скругление 10px */
 .secondary-btn {
     background: #f1f5f9;
     color: #1e293b;
     border: 1px solid #e2e8f0;
+    border-radius: 10px;  /* единое скругление */
 }
 
 .secondary-btn:hover {
     background: #e2e8f0;
 }
 
-/* Адаптация под совсем маленькие экраны — отличные отступы */
+/* Адаптация под маленькие экраны */
 @media (max-width: 480px) {
     .actions {
         padding: 12px 14px 16px 14px;
@@ -182,21 +182,23 @@ h3{
     .action-btn {
         padding: 11px 6px;
         font-size: 14px;
+        border-radius: 10px;  /* сохраняем единое скругление */
     }
     .info-table td {
         padding: 12px 12px;
     }
 }
 
-/* чтобы на десктопе выглядело аккуратно, тоже оставляем красивый баланс */
+/* на десктопе чуть шире */
 @media (min-width: 600px) {
     .actions {
         justify-content: space-between;
     }
     .action-btn {
         flex: 0 1 auto;
-        min-width: 100px;
+        min-width: 110px;
         padding: 10px 20px;
+        border-radius: 10px;
     }
 }
 
@@ -610,7 +612,7 @@ async function delRowAsync(row){
     }
 }
 
-// Рендер с удобными кнопками (одна слева, другая справа) на телефоне
+// Рендер с синей кнопкой "Вернуть" и уменьшенным скруглением
 function render(transfers){
     const container = document.getElementById('list');
     
@@ -691,7 +693,7 @@ function render(transfers){
         
         div.appendChild(table);
         
-        // --- НОВЫЙ БЛОК ДЕЙСТВИЙ: кнопки расположены слева (Вернуть) и справа (Удалить) ---
+        // Блок действий с кнопками: Вернуть (синий, слева) и Удалить (светлый, справа)
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
         
@@ -710,15 +712,6 @@ function render(transfers){
                 );
             };
             actionsDiv.appendChild(returnBtn);
-        } else {
-            // Для закрытых записей кнопка "Вернуть" не показывается, но для сохранения симметрии можно вставить пустышку? 
-            // Но по дизайну закрытые имеют только Удалить, и чтобы кнопка удаления была справа, 
-            // сделаем так: если нет Вернуть, то добавим невидимый блок? Лучше чтобы удаление было справа.
-            // Чтобы визуально удаление было с краю, просто добавим удаление справа, а слева ничего – всё равно будет выглядеть нормально.
-            // Но чтобы кнопка удаления прилипала к правому краю, применим margin-left: auto у secondary-btn.
-            // Однако зададим стиль: если нет левой кнопки, то правую нужно выровнять вправо.
-            // Упрощённо: добавим флекс-контейнер и зададим secondary-btn стиль margin-left: auto, когда нет пары.
-            // Ниже реализуем логику в JS.
         }
         
         const deleteBtn = document.createElement('button');
@@ -729,33 +722,19 @@ function render(transfers){
             delRowAsync(transfer.row);
         };
         
-        // Логика позиционирования: если есть кнопка Вернуть, обе уже встанут по краям через justify-content: space-between
-        // Если кнопки Вернуть нет, то удаление должно быть прижато к правому краю
+        // Если запись открыта (есть кнопка Вернуть), обе кнопки встанут по краям через justify-content: space-between
+        // Если записи закрыты (нет кнопки Вернуть), то кнопку удаления прижимаем вправо
         if (transfer.status !== 'open') {
-            // для закрытых записей: только удаление, выравниваем вправо
             deleteBtn.style.marginLeft = 'auto';
             deleteBtn.style.flex = '0 0 auto';
             actionsDiv.appendChild(deleteBtn);
         } else {
-            // для активных: обе кнопки уже добавлены, и благодаря space-between они разойдутся
             actionsDiv.appendChild(deleteBtn);
-        }
-        
-        // Если active и кнопка Вернуть уже вставлена до удаления, то после добавления удаления всё корректно.
-        // Важно: на случай если transfer.status === 'open', returnBtn уже есть, deleteBtn добавляем следом. space-between разведёт по краям.
-        // Нужно убедиться что для open сценария мы добавили returnBtn ранее
-        if (transfer.status === 'open') {
-            // returnBtn уже добавлен в actionsDiv, просто добавляем deleteBtn и всё прекрасно встанет.
-            // Но returnBtn мы добавили выше. Check: выше есть if(open) создали returnBtn и добавили. Потом добавили deleteBtn.
-            // Всё верно. Для красоты гарантируем порядок.
         }
         
         div.appendChild(actionsDiv);
         container.appendChild(div);
     });
-    
-    // Дополнительный фикс для закрытых записей, чтобы кнопка "Удалить" чётко справа (margin-left:auto уже добавлен)
-    // Также перепроверим для активных: кнопки имеют разные классы, но space-between обеспечивает расположение.
 }
 
 function escapeHtml(str){
