@@ -541,8 +541,21 @@ const CURRENT_SITE = window.location.href.split('?')[0];
 // ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMyUTi-1BqBUF9VtzVW7wcvWjJOTtLSpbNFp6uuCqHq1z041FRiNcNzM8T137GdpM/exec';
 
+// Маппинг названий складов на имена листов для фото
+// BB = BLOCKBUSTER, KH = LUCKY STRIKE KH, SKYMALL = SKYMALL
+const WAREHOUSE_TO_SHEET = {
+    'BLOCKBUSTER': 'BB',
+    'LUCKY STRIKE KH': 'KH',
+    'SKYMALL': 'SKYMALL'
+};
+
+// Кэш для фото: храним { "sheetName_partNumber": "url" } 
+// но проще: при клике динамически получаем фото через API Google Sheets
+let photoCache = new Map(); // key: "sheetName|partNumber" -> url
+
 let currentUser = null;
 let currentUserNameFromSheet = null;
+let gapiInitialized = false;
 
 function showToast(message, isError = false) {
     const toast = document.createElement('div');
@@ -709,23 +722,130 @@ async function delRowAsync(row){
     }
 }
 
-// Показ фото детали через модальное окно (если photoUrl есть, иначе ошибка)
-function showPhotoModal(photoUrl, partNumber) {
-    const modal = document.getElementById('photoModal');
-    const modalImg = document.getElementById('modalImage');
-    const caption = document.getElementById('modalCaption');
-    
-    if (!photoUrl || photoUrl === '') {
-        showToast(`📷 Нет фото для детали ${partNumber}`, true);
-        return;
+// Функция получения фото детали из листа склада (BB / KH / SKYMALL)
+// Ищем в колонке A номер детали, возвращаем значение из колонки B (ссылка на фото)
+async function fetchPhotoFromSheet(warehouseName, partNumber) {
+    const sheetName = WAREHOUSE_TO_SHEET[warehouseName];
+    if (!sheetName) {
+        console.warn(`Неизвестный склад: ${warehouseName}`);
+        return null;
     }
     
-    modalImg.src = photoUrl;
-    caption.textContent = `Деталь: ${partNumber}`;
-    modal.style.display = 'flex';
+    const cacheKey = `${sheetName}|${partNumber}`;
+    if (photoCache.has(cacheKey)) {
+        return photoCache.get(cacheKey);
+    }
+    
+    try {
+        // Убедимся что gapi клиент готов
+        if (!gapiInitialized) {
+            await loadSheetsAPI();
+            await gapi.client.init({
+                apiKey: AUTH_API_KEY,
+                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+            });
+            gapiInitialized = true;
+        }
+        
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: AUTH_SPREADSHEET_ID,
+            range: `${sheetName}!A:B`, // Предполагаем: колонка A — номер детали, колонка B — ссылка на фото
+        });
+        
+        const rows = response.result.values || [];
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i][0] && rows[i][0].toString().trim() === partNumber.toString().trim()) {
+                const photoUrl = rows[i][1] ? rows[i][1].trim() : null;
+                if (photoUrl && (photoUrl.startsWith('http') || photoUrl.startsWith('data:image'))) {
+                    photoCache.set(cacheKey, photoUrl);
+                    return photoUrl;
+                } else {
+                    photoCache.set(cacheKey, null);
+                    return null;
+                }
+            }
+        }
+        photoCache.set(cacheKey, null);
+        return null;
+    } catch(error) {
+        console.error(`Ошибка получения фото из листа ${sheetName}:`, error);
+        return null;
+    }
 }
 
-// Рендер с возможностью клика по карточке для просмотра фото
+// Показ фото детали
+async function showPhotoForTransfer(transfer) {
+    const partNumber = transfer.partNumber;
+    // Определяем склад, где сейчас находится деталь: если статус открыт — деталь на складе "to", если закрыт — деталь вернулась в "from"
+    // Логичнее: фото детали хранится на листе склада-источника (откуда деталь изначально пришла) либо в зависимости от контекста.
+    // По заданию: фото в листах BB, KH, SKYMALL. Для детали нужно понять её "родной" склад? 
+    // Лучше: пользователь хочет фото детали, ищем по всем трём листам (BB, KH, SKYMALL) по номеру детали.
+    // Это наиболее удобно — находим деталь в любом из складов.
+    
+    showToast('🔍 Ищем фото детали...', false);
+    
+    const sheetsToCheck = ['BB', 'KH', 'SKYMALL'];
+    let foundPhoto = null;
+    let foundSheet = null;
+    
+    for (const sheet of sheetsToCheck) {
+        const cacheKey = `${sheet}|${partNumber}`;
+        if (photoCache.has(cacheKey)) {
+            foundPhoto = photoCache.get(cacheKey);
+            if (foundPhoto) {
+                foundSheet = sheet;
+                break;
+            }
+            continue;
+        }
+        
+        try {
+            if (!gapiInitialized) {
+                await loadSheetsAPI();
+                await gapi.client.init({
+                    apiKey: AUTH_API_KEY,
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                });
+                gapiInitialized = true;
+            }
+            
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: AUTH_SPREADSHEET_ID,
+                range: `${sheet}!A:B`,
+            });
+            const rows = response.result.values || [];
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i][0] && rows[i][0].toString().trim() === partNumber.toString().trim()) {
+                    const url = rows[i][1] ? rows[i][1].trim() : null;
+                    if (url && (url.startsWith('http') || url.startsWith('data:image'))) {
+                        foundPhoto = url;
+                        foundSheet = sheet;
+                        photoCache.set(`${sheet}|${partNumber}`, url);
+                        break;
+                    } else {
+                        photoCache.set(`${sheet}|${partNumber}`, null);
+                    }
+                }
+            }
+            if (foundPhoto) break;
+        } catch(e) {
+            console.warn(`Ошибка при проверке листа ${sheet}:`, e);
+        }
+    }
+    
+    if (foundPhoto) {
+        const modal = document.getElementById('photoModal');
+        const modalImg = document.getElementById('modalImage');
+        const caption = document.getElementById('modalCaption');
+        modalImg.src = foundPhoto;
+        caption.textContent = `Деталь: ${partNumber} (${foundSheet})`;
+        modal.style.display = 'flex';
+    } else {
+        showToast(`📷 Фото для детали "${partNumber}" не найдено в листах BB, KH, SKYMALL`, true);
+    }
+}
+
+// Рендер с кликом для фото
 function render(transfers){
     const container = document.getElementById('list');
     
@@ -745,17 +865,12 @@ function render(transfers){
     sorted.forEach(transfer => {
         const div = document.createElement('div');
         div.className = 'card';
-        // Добавляем обработчик клика на карточку для показа фото (если есть photoUrl)
+        // Клик по карточке — показать фото
         div.addEventListener('click', (e) => {
-            // Если клик произошёл на кнопке, не открываем модалку
             if (e.target.tagName === 'BUTTON' || e.target.closest('.action-btn')) {
                 return;
             }
-            if (transfer.photoUrl && transfer.photoUrl.trim() !== '') {
-                showPhotoModal(transfer.photoUrl, transfer.partNumber || 'Деталь');
-            } else {
-                showToast(`📷 Фото для детали "${transfer.partNumber || '?'}" не добавлено`, true);
-            }
+            showPhotoForTransfer(transfer);
         });
 
         let dateStr = 'Дата не указана';
@@ -783,7 +898,7 @@ function render(transfers){
         }
         
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
-        const statusText = transfer.status === 'open' ? '● Задолженность' : '✓ Закрыто';
+        const statusText = transfer.status === 'open' ? '● Активно' : '✓ Закрыто';
         
         const table = document.createElement('table');
         table.className = 'info-table';
@@ -818,7 +933,6 @@ function render(transfers){
         
         div.appendChild(table);
         
-        // Блок действий
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
         
@@ -876,6 +990,10 @@ function escapeHtml(str){
 
 function loadSheetsAPI() {
     return new Promise((resolve, reject) => {
+        if (window.gapi && gapi.client && gapi.client.sheets) {
+            resolve();
+            return;
+        }
         gapi.load('client', {
             callback: () => resolve(),
             onerror: () => reject('Ошибка загрузки Google API'),
@@ -936,7 +1054,7 @@ async function initAndCheckEmail() {
             apiKey: AUTH_API_KEY,
             discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
         });
-        
+        gapiInitialized = true;
         await checkEmailAndSiteInSheet(currentUser.email);
         
     } catch (error) {
@@ -1034,11 +1152,11 @@ function parseJwt(token) {
 function signOut() {
     localStorage.clear();
     sessionStorage.clear();
-    
+    photoCache.clear();
+    gapiInitialized = false;
     if (google && google.accounts && google.accounts.id) {
         google.accounts.id.disableAutoSelect();
     }
-    
     location.reload();
 }
 
@@ -1086,7 +1204,10 @@ window.addEventListener('load', function() {
                 apiKey: AUTH_API_KEY,
                 discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
             }))
-            .then(() => checkEmailAndSiteInSheet(email))
+            .then(() => {
+                gapiInitialized = true;
+                return checkEmailAndSiteInSheet(email);
+            })
             .then(() => loadAsync())
             .catch(() => signOut());
     } else {
