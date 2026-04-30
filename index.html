@@ -394,7 +394,7 @@ async function loadAsync(){
         }
     } catch(error) {
         console.error('Load error:', error);
-        container.innerHTML = '<div class="empty">❌ Ошибка загрузки: ' + escapeHtml(error.message) + '</div>';
+        container.innerHTML = '<div class="empty">Ошибка загрузки: ' + escapeHtml(error.message) + '</div>';
     }
 }
 
@@ -425,7 +425,7 @@ async function moveAsync(){
     const toSelect = document.getElementById('to');
     
     const originalText = moveBtn.innerHTML;
-    moveBtn.innerHTML = '⏳ Перемещение...';
+    moveBtn.innerHTML = 'Перемещение...';
     moveBtn.disabled = true;
 
     try {
@@ -482,9 +482,9 @@ async function closeTransferAsync(row, partNumber, from, to, maxQuantity){
         await callScriptAsync('closeTransfer', row);
         
         await loadAsync();
-        showToast(`✅ Возвращено ${returnQuantity} шт. в ${from}`);
+        showToast(`Возвращено ${returnQuantity} шт. в ${from}`);
     } catch(error) {
-        showToast('❌ Ошибка: ' + error.message, true);
+        showToast('Ошибка: ' + error.message, true);
     }
 }
 
@@ -493,9 +493,9 @@ async function delRowAsync(row){
         try {
             await callScriptAsync('deleteTransfer', row);
             await loadAsync();
-            showToast('✅ Запись удалена');
+            showToast('Запись удалена');
         } catch(error) {
-            showToast('❌ Ошибка: ' + error.message, true);
+            showToast('Ошибка: ' + error.message, true);
         }
     }
 }
@@ -540,27 +540,27 @@ function render(transfers){
             try {
                 const closedDate = new Date(transfer.closedAt);
                 if (!isNaN(closedDate.getTime())) {
-                    closedInfo = `<div class="meta">🔒 Закрыто: ${closedDate.toLocaleString('ru-RU')}</div>`;
+                    closedInfo = `<div class="meta">Закрыто: ${closedDate.toLocaleString('ru-RU')}</div>`;
                 }
             } catch(e) {
-                closedInfo = `<div class="meta">🔒 Закрыто: ${transfer.closedAt}</div>`;
+                closedInfo = `<div class="meta">Закрыто: ${transfer.closedAt}</div>`;
             }
         }
 
         div.innerHTML = `
             <b>🔧 ${escapeHtml(transfer.partNumber || 'Без номера')}</b>
-            <div class="meta">📦 Количество: <strong>${escapeHtml(transfer.quantity)}</strong> шт.</div>
-            <div class="meta">🕒 Создано: ${dateStr}</div>
-            <div class="meta">📤 Из: ${escapeHtml(transfer.from || '—')}</div>
-            <div class="meta">📥 В: ${escapeHtml(transfer.to || '—')}</div>
+            <div class="meta">Количество: <strong>${escapeHtml(transfer.quantity)}</strong> шт.</div>
+            <div class="meta">Создано: ${dateStr}</div>
+            <div class="meta">Взято из: ${escapeHtml(transfer.from || '—')}</div>
+            <div class="meta">Отправленно в: ${escapeHtml(transfer.to || '—')}</div>
             <div class="meta ${statusClass}">${statusText}</div>
             ${closedInfo}
             <div class="actions">
                 ${transfer.status === 'open'
-                    ? `<button class="close-btn" onclick="closeTransferAsync(${transfer.row}, '${escapeHtml(transfer.partNumber)}', '${escapeHtml(transfer.from)}', '${escapeHtml(transfer.to)}', ${transfer.quantity})">✅ Закрыть (вернуть детали)</button>`
+                    ? `<button class="close-btn" onclick="closeTransferAsync(${transfer.row}, '${escapeHtml(transfer.partNumber)}', '${escapeHtml(transfer.from)}', '${escapeHtml(transfer.to)}', ${transfer.quantity})">ВЕРНУТЬ</button>`
                     : ''
                 }
-                <button class="secondary" onclick="delRowAsync(${transfer.row})">🗑️ Удалить</button>
+                <button class="secondary" onclick="delRowAsync(${transfer.row})">Удалить</button>
             </div>
         `;
 
