@@ -20,13 +20,11 @@ body{
     color:#111;
 }
 
-/* контейнер */
 .wrapper{
     max-width:600px;
     margin:auto;
 }
 
-/* поля */
 input,select,button{
     width:100%;
     padding:12px;
@@ -36,7 +34,6 @@ input,select,button{
     font-size:15px;
 }
 
-/* кнопка */
 button{
     background:#1f2937;
     color:#fff;
@@ -49,13 +46,11 @@ button:hover{
     background:#374151;
 }
 
-/* заголовок */
 h3{
     margin:20px 0 10px;
     font-size:16px;
 }
 
-/* карточка */
 .card{
     border:1px solid #eee;
     border-radius:12px;
@@ -64,14 +59,12 @@ h3{
     background:#fff;
 }
 
-/* текст */
 .meta{
     font-size:14px;
     color:#444;
     margin:3px 0;
 }
 
-/* статусы */
 .status-open{
     color:#f59e0b;
     font-weight:600;
@@ -82,7 +75,6 @@ h3{
     font-weight:600;
 }
 
-/* кнопки */
 .actions{
     display:flex;
     gap:10px;
@@ -99,21 +91,18 @@ h3{
     background:#e5e7eb;
 }
 
-/* индикатор загрузки */
 .loading{
     text-align:center;
     color:#6b7280;
     padding:20px;
 }
 
-/* пустое состояние */
 .empty{
     text-align:center;
     color:#9ca3af;
     padding:20px;
 }
 
-/* Стили для авторизации */
 #login-section {
     display: flex;
     justify-content: center;
@@ -235,7 +224,6 @@ h3{
 <body>
 
 <div class="wrapper">
-    <!-- Контейнер для авторизации -->
     <div id="login-section">
         <div id="login-container">
             <div class="login-icon">
@@ -260,7 +248,6 @@ h3{
         </div>
     </div>
 
-    <!-- Информация о пользователе -->
     <div id="user-info">
         <div class="user-details">
             <img id="user-pic" src="" alt="Profile">
@@ -272,28 +259,27 @@ h3{
         <button id="logout-btn" onclick="signOut()">Выйти</button>
     </div>
 
-    <!-- Основной контент (скрыт до авторизации) -->
     <div id="main-content">
-        <input id="part" placeholder="Деталь" autocomplete="off">
-        <!-- НОВОЕ ПОЛЕ ДЛЯ КОЛИЧЕСТВА -->
+        <input id="partNumber" placeholder="Номер детали" autocomplete="off">
+        <input id="partName" placeholder="Название детали (опционально)" autocomplete="off">
         <input id="quantity" type="number" placeholder="Количество" min="1" value="1">
         <select id="from">
-            <option>BLOCKBUSTER</option>
+            <option>BB</option>
             <option>SKYMALL</option>
             <option>LUCKY STRIKE KH</option>
         </select>
         <select id="to">
-            <option>BLOCKBUSTER</option>
+            <option>BB</option>
             <option>SKYMALL</option>
             <option>LUCKY STRIKE KH</option>
         </select>
-        <button onclick="add()">Добавить перемещение</button>
-        <h3>Активные и закрытые</h3>
+        <input id="imageUrl" placeholder="URL фото детали (опционально)" autocomplete="off">
+        <button onclick="add()">Переместить деталь</button>
+        <h3>История перемещений</h3>
         <div id="list"></div>
     </div>
 </div>
 
-<!-- Font Awesome для иконок -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
@@ -304,14 +290,13 @@ const AUTH_API_KEY = 'AIzaSyAXL0Hsfxy-g-AgYhnivj4x9gCB2rrtF-0';
 const CURRENT_SITE = 'https://smart-bowling.github.io/TRANSFER/';
 
 // ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ5wGOAHgPlnx-xqNoICWFwvcVejNpbTvCmdHNkhFgzvjqVZdWGybmOac0s_5POevh/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEwKIhMHkZ_CfCLMQgg597Z9GR2pb9PDtlBzEtdyLhtcQAx8OuFH68krEHBxAYTOi4/exec';
 
 let currentUser = null;
 let currentUserNameFromSheet = null;
 
 // ============ Функции авторизации ============
 
-// Загрузка Google API
 function loadSheetsAPI() {
     return new Promise((resolve, reject) => {
         gapi.load('client', {
@@ -323,7 +308,6 @@ function loadSheetsAPI() {
     });
 }
 
-// Обработка ответа Google
 function handleCredentialResponse(response) {
     try {
         const payload = parseJwt(response.credential);
@@ -354,7 +338,6 @@ function showLoading(show) {
     } else {
         if (container.getAttribute('data-original') && document.getElementById('login-section').style.display !== 'none') {
             container.innerHTML = container.getAttribute('data-original');
-            // Перерисовываем кнопку Google
             if (window.google && google.accounts && google.accounts.id) {
                 google.accounts.id.renderButton(document.querySelector('.g_id_signin'), {
                     type: 'standard',
@@ -369,7 +352,6 @@ function showLoading(show) {
     }
 }
 
-// Инициализация API и проверка email с сайтом
 async function initAndCheckEmail() {
     try {
         await loadSheetsAPI();
@@ -387,7 +369,6 @@ async function initAndCheckEmail() {
     }
 }
 
-// Проверка email и URL сайта в Google Sheets
 async function checkEmailAndSiteInSheet(email) {
     try {
         const response = await gapi.client.sheets.spreadsheets.values.get({
@@ -402,7 +383,6 @@ async function checkEmailAndSiteInSheet(email) {
             return;
         }
         
-        // Поиск email в колонке A и проверка URL сайта в других колонках
         let hasAccess = false;
         let foundName = null;
         
@@ -411,16 +391,13 @@ async function checkEmailAndSiteInSheet(email) {
             
             const rowEmail = rows[i][0].toLowerCase().trim();
             if (rowEmail === email) {
-                // Проверяем все остальные колонки (B, C, D, ...) на наличие URL сайта
                 for (let j = 1; j < rows[i].length; j++) {
-                    const site = rows[i][j]?.trim().split('?')[0]; // убираем параметры GET
-                    // Сравниваем с CURRENT_SITE или проверяем наличие ключевого слова
+                    const site = rows[i][j]?.trim().split('?')[0];
                     if (site === CURRENT_SITE || site?.includes('TRANSFER')) {
                         hasAccess = true;
                         break;
                     }
                 }
-                // Запоминаем имя пользователя из колонки B (если есть)
                 if (rows[i][1]) {
                     foundName = rows[i][1].trim();
                 }
@@ -443,7 +420,6 @@ async function checkEmailAndSiteInSheet(email) {
     }
 }
 
-// Функция входа пользователя
 function loginUser(payload) {
     document.getElementById('login-section').style.display = 'none';
     document.getElementById('user-info').style.display = 'flex';
@@ -453,7 +429,6 @@ function loginUser(payload) {
     document.getElementById('user-name').textContent = currentUserNameFromSheet || payload.name;
     document.getElementById('user-email').textContent = payload.email;
     
-    // Сохранение сессии
     localStorage.setItem('userLoggedIn', 'true');
     localStorage.setItem('userEmail', payload.email.toLowerCase());
     localStorage.setItem('userName', payload.name);
@@ -462,11 +437,9 @@ function loginUser(payload) {
     
     showLoading(false);
     
-    // Загружаем данные после авторизации
     load();
 }
 
-// Парсинг JWT токена
 function parseJwt(token) {
     try {
         const base64Url = token.split('.')[1];
@@ -481,12 +454,10 @@ function parseJwt(token) {
     }
 }
 
-// Выход из системы
 function signOut() {
     localStorage.clear();
     sessionStorage.clear();
     
-    // Выход из Google
     if (google && google.accounts && google.accounts.id) {
         google.accounts.id.disableAutoSelect();
     }
@@ -496,16 +467,12 @@ function signOut() {
 
 // ============ Функции учёта деталей ============
 
-// Функция для вызова Google Apps Script
 function callScript(functionName, data = null) {
     return new Promise((resolve, reject) => {
         const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
         window[callbackName] = function(response) {
             delete window[callbackName];
-            if (document.body.contains(script)) {
-                document.body.removeChild(script);
-            }
             if (response && response.error) {
                 reject(new Error(response.error));
             } else {
@@ -555,14 +522,18 @@ async function load(){
 }
 
 async function add(){
-    const partInput = document.getElementById('part');
+    const partNumberInput = document.getElementById('partNumber');
+    const partNameInput = document.getElementById('partName');
     const quantityInput = document.getElementById('quantity');
+    const imageUrlInput = document.getElementById('imageUrl');
     
-    const partVal = partInput.value.trim();
+    const partNumber = partNumberInput.value.trim();
+    const partName = partNameInput.value.trim();
     const quantityVal = quantityInput.value.trim();
+    const imageUrl = imageUrlInput.value.trim();
     
-    if(!partVal){
-        alert('Введите название детали');
+    if(!partNumber){
+        alert('Введите номер детали');
         return;
     }
     
@@ -570,20 +541,32 @@ async function add(){
         alert('Введите корректное количество (больше 0)');
         return;
     }
+    
+    if(document.getElementById('from').value === document.getElementById('to').value){
+        alert('Нельзя перемещать деталь в тот же склад');
+        return;
+    }
 
     const fromSelect = document.getElementById('from');
     const toSelect = document.getElementById('to');
 
     try {
-        await callScript('addTransfer', {
-            part: partVal,
+        await callScript('transferPart', {
+            partNumber: partNumber,
+            partName: partName,
             quantity: parseInt(quantityVal),
             from: fromSelect.value,
-            to: toSelect.value
+            to: toSelect.value,
+            imageUrl: imageUrl
         });
-        partInput.value = '';
-        quantityInput.value = '1'; // Сброс на значение по умолчанию
+        
+        partNumberInput.value = '';
+        partNameInput.value = '';
+        quantityInput.value = '1';
+        imageUrlInput.value = '';
+        
         load();
+        alert('Деталь успешно перемещена!');
     } catch(error) {
         alert('Ошибка: ' + error.message);
     }
@@ -621,7 +604,6 @@ function render(transfers){
 
     container.innerHTML = '';
     
-    // Сортируем: сначала активные, потом закрытые
     const sorted = [...transfers].sort((a,b) => {
         if(a.status === 'open' && b.status === 'closed') return -1;
         if(a.status === 'closed' && b.status === 'open') return 1;
@@ -635,7 +617,6 @@ function render(transfers){
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
         const statusText = transfer.status === 'open' ? '● Активно' : '✓ Закрыто';
         
-        // Форматируем дату с проверкой
         let dateStr = 'Дата не указана';
         if (transfer.timestamp) {
             try {
@@ -660,21 +641,21 @@ function render(transfers){
             }
         }
 
-        // ОТОБРАЖАЕМ КОЛИЧЕСТВО
         div.innerHTML = `
-            <b>${escapeHtml(transfer.part || 'Без названия')}</b>
-            <div class="meta">Количество: <strong>${escapeHtml(transfer.quantity || '?')}</strong> шт.</div>
-            <div class="meta">Создано: ${dateStr}</div>
-            <div class="meta">Из: ${escapeHtml(transfer.from || '—')}</div>
-            <div class="meta">В: ${escapeHtml(transfer.to || '—')}</div>
+            <b>${escapeHtml(transfer.partNumber || 'Без номера')}</b>
+            ${transfer.partName ? `<div class="meta">📦 ${escapeHtml(transfer.partName)}</div>` : ''}
+            <div class="meta">📊 Количество: <strong>${escapeHtml(transfer.quantity)}</strong> шт.</div>
+            <div class="meta">📅 Создано: ${dateStr}</div>
+            <div class="meta">📤 Из: ${escapeHtml(transfer.from || '—')}</div>
+            <div class="meta">📥 В: ${escapeHtml(transfer.to || '—')}</div>
             <div class="meta ${statusClass}">${statusText}</div>
             ${closedInfo}
             <div class="actions">
                 ${transfer.status === 'open'
-                    ? `<button onclick="closeRow(${transfer.row})">Закрыть</button>`
+                    ? `<button onclick="closeRow(${transfer.row})">✅ Закрыть</button>`
                     : ''
                 }
-                <button class="secondary" onclick="delRow(${transfer.row})">Удалить</button>
+                <button class="secondary" onclick="delRow(${transfer.row})">🗑️ Удалить</button>
             </div>
         `;
 
@@ -682,7 +663,6 @@ function render(transfers){
     });
 }
 
-// Защита от XSS с проверкой типа
 function escapeHtml(str){
     if (str === null || str === undefined) return '';
     if (typeof str !== 'string') str = String(str);
@@ -696,7 +676,6 @@ function escapeHtml(str){
 
 // ============ Инициализация Google Sign-In и проверка сессии ============
 
-// Проверка сессии при загрузке
 window.addEventListener('load', function() {
     const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
     const email = localStorage.getItem('userEmail');
@@ -720,7 +699,6 @@ window.addEventListener('load', function() {
         };
         currentUserNameFromSheet = nameSheet || name;
         
-        // Проверка актуальности сессии
         showLoading(true);
         loadSheetsAPI()
             .then(() => gapi.client.init({
@@ -735,7 +713,6 @@ window.addEventListener('load', function() {
         document.getElementById('user-info').style.display = 'none';
         document.getElementById('main-content').style.display = 'none';
         
-        // Инициализация Google Sign-In
         if (google && google.accounts && google.accounts.id) {
             google.accounts.id.initialize({
                 client_id: '328749588235-bgfeukqogpoq2ha65j7j0vk840hctiaq.apps.googleusercontent.com',
@@ -754,16 +731,9 @@ window.addEventListener('load', function() {
                 }
             );
         }
-        
-        // Скрываем загрузочный экран если он есть
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) {
-            loadingScreen.style.display = 'none';
-        }
     }
 });
 
-// Делаем функции глобальными для вызова из HTML
 window.add = add;
 window.closeRow = closeRow;
 window.delRow = delRow;
