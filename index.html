@@ -46,14 +46,6 @@ button:hover{
     background:#374151;
 }
 
-.return-btn{
-    background:#10b981;
-}
-
-.return-btn:hover{
-    background:#059669;
-}
-
 h3{
     margin:20px 0 10px;
     font-size:16px;
@@ -98,6 +90,14 @@ h3{
 
 .secondary:hover{
     background:#e5e7eb;
+}
+
+.close-btn{
+    background:#10b981;
+}
+
+.close-btn:hover{
+    background:#059669;
 }
 
 .loading{
@@ -282,7 +282,6 @@ h3{
             <option>LUCKY STRIKE KH</option>
         </select>
         <button onclick="move()">➡️ Переместить деталь</button>
-        <button onclick="returnItem()" class="return-btn" style="background:#10b981;">⬅️ Вернуть деталь</button>
         <h3>История перемещений</h3>
         <div id="list"></div>
     </div>
@@ -298,7 +297,7 @@ const AUTH_API_KEY = 'AIzaSyAXL0Hsfxy-g-AgYhnivj4x9gCB2rrtF-0';
 const CURRENT_SITE = 'https://smart-bowling.github.io/TRANSFER/';
 
 // ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEUaDWR0mzIoFeSYyTSHp9QdVyQljSgqYt2TDuKi1MihzmK1bWVUxgAVN6gWXuQz-x/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6TOosKtUcl2CGmu3tkCKyBfjgc30vOcsd2N11LoXvj7a7e11tSirFgecGt7UhQTbG/exec';
 
 let currentUser = null;
 let currentUserNameFromSheet = null;
@@ -573,58 +572,44 @@ async function move(){
     }
 }
 
-async function returnItem(){
-    const partNumberInput = document.getElementById('partNumber');
-    const quantityInput = document.getElementById('quantity');
+async function closeTransfer(row, partNumber, from, to, maxQuantity){
+    // Запрашиваем количество для возврата
+    let returnQuantity = prompt(`Сколько деталей "${partNumber}" вернуть обратно в ${from}?\n(Доступно для возврата: ${maxQuantity})`, maxQuantity);
     
-    const partNumber = partNumberInput.value.trim();
-    const quantityVal = quantityInput.value.trim();
-    
-    if(!partNumber){
-        alert('Введите номер детали');
-        return;
+    if (returnQuantity === null) {
+        return; // Пользователь отменил
     }
     
-    if(!quantityVal || parseInt(quantityVal) <= 0){
+    returnQuantity = parseInt(returnQuantity);
+    
+    if (isNaN(returnQuantity) || returnQuantity <= 0) {
         alert('Введите корректное количество (больше 0)');
         return;
     }
     
-    if(document.getElementById('from').value === document.getElementById('to').value){
-        alert('Нельзя возвращать деталь в тот же склад');
+    if (returnQuantity > maxQuantity) {
+        alert(`Нельзя вернуть больше ${maxQuantity} шт.`);
         return;
     }
-
-    const fromSelect = document.getElementById('from');
-    const toSelect = document.getElementById('to');
-
+    
     try {
-        await callScript('transferPart', {
-            partNumber: partNumber,
-            quantity: parseInt(quantityVal),
-            from: fromSelect.value,
-            to: toSelect.value,
-            type: 'return'
-        });
+        // Сначала возвращаем детали (добавляем в исходный склад)
+        if (returnQuantity > 0) {
+            await callScript('returnPart', {
+                partNumber: partNumber,
+                quantity: returnQuantity,
+                to: to,      // откуда возвращаем (куда было перемещено)
+                from: from   // куда возвращаем (откуда брали)
+            });
+        }
         
-        partNumberInput.value = '';
-        quantityInput.value = '1';
+        // Затем закрываем/удаляем запись о перемещении
+        await callScript('closeTransfer', row);
         
         load();
-        alert('Деталь успешно возвращена!');
+        alert(`Возвращено ${returnQuantity} шт. в ${from}`);
     } catch(error) {
         alert('Ошибка: ' + error.message);
-    }
-}
-
-async function closeRow(row){
-    if(confirm('Закрыть это перемещение?')){
-        try {
-            await callScript('closeTransfer', row);
-            load();
-        } catch(error) {
-            alert('Ошибка: ' + error.message);
-        }
     }
 }
 
@@ -690,16 +675,16 @@ function render(transfers){
             <b>${escapeHtml(transfer.partNumber || 'Без номера')}</b>
             <div class="meta">Количество: <strong>${escapeHtml(transfer.quantity)}</strong> шт.</div>
             <div class="meta">Создано: ${dateStr}</div>
-            <div class="meta">Из: ${escapeHtml(transfer.from || '—')}</div>
-            <div class="meta">В: ${escapeHtml(transfer.to || '—')}</div>
+            <div class="meta">📤 Из: ${escapeHtml(transfer.from || '—')}</div>
+            <div class="meta">📥 В: ${escapeHtml(transfer.to || '—')}</div>
             <div class="meta ${statusClass}">${statusText}</div>
             ${closedInfo}
             <div class="actions">
                 ${transfer.status === 'open'
-                    ? `<button onclick="closeRow(${transfer.row})">Закрыть</button>`
+                    ? `<button class="close-btn" onclick="closeTransfer(${transfer.row}, '${escapeHtml(transfer.partNumber)}', '${escapeHtml(transfer.from)}', '${escapeHtml(transfer.to)}', ${transfer.quantity})">✅ Закрыть (вернуть детали)</button>`
                     : ''
                 }
-                <button class="secondary" onclick="delRow(${transfer.row})">Удалить</button>
+                <button class="secondary" onclick="delRow(${transfer.row})">🗑️ Удалить</button>
             </div>
         `;
 
@@ -779,8 +764,7 @@ window.addEventListener('load', function() {
 });
 
 window.move = move;
-window.returnItem = returnItem;
-window.closeRow = closeRow;
+window.closeTransfer = closeTransfer;
 window.delRow = delRow;
 window.signOut = signOut;
 </script>
