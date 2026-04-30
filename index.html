@@ -46,6 +46,14 @@ button:hover{
     background:#374151;
 }
 
+.return-btn{
+    background:#10b981;
+}
+
+.return-btn:hover{
+    background:#059669;
+}
+
 h3{
     margin:20px 0 10px;
     font-size:16px;
@@ -79,6 +87,7 @@ h3{
     display:flex;
     gap:10px;
     margin-top:10px;
+    flex-wrap:wrap;
 }
 
 .secondary{
@@ -272,7 +281,8 @@ h3{
             <option>SKYMALL</option>
             <option>LUCKY STRIKE KH</option>
         </select>
-        <button onclick="add()">Переместить деталь</button>
+        <button onclick="move()">➡️ Переместить деталь</button>
+        <button onclick="returnItem()" class="return-btn" style="background:#10b981;">⬅️ Вернуть деталь</button>
         <h3>История перемещений</h3>
         <div id="list"></div>
     </div>
@@ -288,7 +298,7 @@ const AUTH_API_KEY = 'AIzaSyAXL0Hsfxy-g-AgYhnivj4x9gCB2rrtF-0';
 const CURRENT_SITE = 'https://smart-bowling.github.io/TRANSFER/';
 
 // ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDDbOEBAc3IB_VE8FAVdDV9dP-BytOUv29rwEdZFYGh8IOcouGG_qhB-KEAu8E5U_r/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEUaDWR0mzIoFeSYyTSHp9QdVyQljSgqYt2TDuKi1MihzmK1bWVUxgAVN6gWXuQz-x/exec';
 
 let currentUser = null;
 let currentUserNameFromSheet = null;
@@ -519,7 +529,7 @@ async function load(){
     }
 }
 
-async function add(){
+async function move(){
     const partNumberInput = document.getElementById('partNumber');
     const quantityInput = document.getElementById('quantity');
     
@@ -549,7 +559,8 @@ async function add(){
             partNumber: partNumber,
             quantity: parseInt(quantityVal),
             from: fromSelect.value,
-            to: toSelect.value
+            to: toSelect.value,
+            type: 'move'
         });
         
         partNumberInput.value = '';
@@ -557,6 +568,50 @@ async function add(){
         
         load();
         alert('Деталь успешно перемещена!');
+    } catch(error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function returnItem(){
+    const partNumberInput = document.getElementById('partNumber');
+    const quantityInput = document.getElementById('quantity');
+    
+    const partNumber = partNumberInput.value.trim();
+    const quantityVal = quantityInput.value.trim();
+    
+    if(!partNumber){
+        alert('Введите номер детали');
+        return;
+    }
+    
+    if(!quantityVal || parseInt(quantityVal) <= 0){
+        alert('Введите корректное количество (больше 0)');
+        return;
+    }
+    
+    if(document.getElementById('from').value === document.getElementById('to').value){
+        alert('Нельзя возвращать деталь в тот же склад');
+        return;
+    }
+
+    const fromSelect = document.getElementById('from');
+    const toSelect = document.getElementById('to');
+
+    try {
+        await callScript('transferPart', {
+            partNumber: partNumber,
+            quantity: parseInt(quantityVal),
+            from: fromSelect.value,
+            to: toSelect.value,
+            type: 'return'
+        });
+        
+        partNumberInput.value = '';
+        quantityInput.value = '1';
+        
+        load();
+        alert('Деталь успешно возвращена!');
     } catch(error) {
         alert('Ошибка: ' + error.message);
     }
@@ -723,7 +778,8 @@ window.addEventListener('load', function() {
     }
 });
 
-window.add = add;
+window.move = move;
+window.returnItem = returnItem;
 window.closeRow = closeRow;
 window.delRow = delRow;
 window.signOut = signOut;
