@@ -275,6 +275,8 @@ h3{
     <!-- Основной контент (скрыт до авторизации) -->
     <div id="main-content">
         <input id="part" placeholder="Деталь" autocomplete="off">
+        <!-- НОВОЕ ПОЛЕ ДЛЯ КОЛИЧЕСТВА -->
+        <input id="quantity" type="number" placeholder="Количество" min="1" value="1">
         <select id="from">
             <option>BLOCKBUSTER</option>
             <option>SKYMALL</option>
@@ -302,7 +304,7 @@ const AUTH_API_KEY = 'AIzaSyAXL0Hsfxy-g-AgYhnivj4x9gCB2rrtF-0';
 const CURRENT_SITE = 'https://smart-bowling.github.io/TRANSFER/';
 
 // ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyeWFpD7RiL0x8jXP08GTKCy5IfseVwzDnn1RJNJcInAOKHq89aUhK-04zlIzlAxR1K/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ5wGOAHgPlnx-xqNoICWFwvcVejNpbTvCmdHNkhFgzvjqVZdWGybmOac0s_5POevh/exec';
 
 let currentUser = null;
 let currentUserNameFromSheet = null;
@@ -554,10 +556,18 @@ async function load(){
 
 async function add(){
     const partInput = document.getElementById('part');
-    const val = partInput.value.trim();
+    const quantityInput = document.getElementById('quantity');
     
-    if(!val){
+    const partVal = partInput.value.trim();
+    const quantityVal = quantityInput.value.trim();
+    
+    if(!partVal){
         alert('Введите название детали');
+        return;
+    }
+    
+    if(!quantityVal || parseInt(quantityVal) <= 0){
+        alert('Введите корректное количество (больше 0)');
         return;
     }
 
@@ -566,11 +576,13 @@ async function add(){
 
     try {
         await callScript('addTransfer', {
-            part: val,
+            part: partVal,
+            quantity: parseInt(quantityVal),
             from: fromSelect.value,
             to: toSelect.value
         });
         partInput.value = '';
+        quantityInput.value = '1'; // Сброс на значение по умолчанию
         load();
     } catch(error) {
         alert('Ошибка: ' + error.message);
@@ -648,8 +660,10 @@ function render(transfers){
             }
         }
 
+        // ОТОБРАЖАЕМ КОЛИЧЕСТВО
         div.innerHTML = `
             <b>${escapeHtml(transfer.part || 'Без названия')}</b>
+            <div class="meta">Количество: <strong>${escapeHtml(transfer.quantity || '?')}</strong> шт.</div>
             <div class="meta">Создано: ${dateStr}</div>
             <div class="meta">Из: ${escapeHtml(transfer.from || '—')}</div>
             <div class="meta">В: ${escapeHtml(transfer.to || '—')}</div>
