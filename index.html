@@ -542,16 +542,14 @@ const CURRENT_SITE = window.location.href.split('?')[0];
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMyUTi-1BqBUF9VtzVW7wcvWjJOTtLSpbNFp6uuCqHq1z041FRiNcNzM8T137GdpM/exec';
 
 // Маппинг названий складов на имена листов для фото
-// BB = BLOCKBUSTER, KH = LUCKY STRIKE KH, SKYMALL = SKYMALL
 const WAREHOUSE_TO_SHEET = {
     'BLOCKBUSTER': 'BB',
     'LUCKY STRIKE KH': 'KH',
     'SKYMALL': 'SKYMALL'
 };
 
-// Кэш для фото: храним { "sheetName_partNumber": "url" } 
-// но проще: при клике динамически получаем фото через API Google Sheets
-let photoCache = new Map(); // key: "sheetName|partNumber" -> url
+// Кэш для фото: key "sheetName|partNumber" -> url
+let photoCache = new Map();
 
 let currentUser = null;
 let currentUserNameFromSheet = null;
@@ -722,80 +720,16 @@ async function delRowAsync(row){
     }
 }
 
-// Функция получения фото детали из листа склада (BB / KH / SKYMALL)
-// Ищем в колонке A номер детали, возвращаем значение из колонки B (ссылка на фото)
-async function fetchPhotoFromSheet(warehouseName, partNumber) {
-    const sheetName = WAREHOUSE_TO_SHEET[warehouseName];
-    if (!sheetName) {
-        console.warn(`Неизвестный склад: ${warehouseName}`);
-        return null;
-    }
-    
-    const cacheKey = `${sheetName}|${partNumber}`;
-    if (photoCache.has(cacheKey)) {
-        return photoCache.get(cacheKey);
-    }
-    
-    try {
-        // Убедимся что gapi клиент готов
-        if (!gapiInitialized) {
-            await loadSheetsAPI();
-            await gapi.client.init({
-                apiKey: AUTH_API_KEY,
-                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-            });
-            gapiInitialized = true;
-        }
-        
-        const response = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: AUTH_SPREADSHEET_ID,
-            range: `${sheetName}!A:B`, // Предполагаем: колонка A — номер детали, колонка B — ссылка на фото
-        });
-        
-        const rows = response.result.values || [];
-        for (let i = 0; i < rows.length; i++) {
-            if (rows[i][0] && rows[i][0].toString().trim() === partNumber.toString().trim()) {
-                const photoUrl = rows[i][1] ? rows[i][1].trim() : null;
-                if (photoUrl && (photoUrl.startsWith('http') || photoUrl.startsWith('data:image'))) {
-                    photoCache.set(cacheKey, photoUrl);
-                    return photoUrl;
-                } else {
-                    photoCache.set(cacheKey, null);
-                    return null;
-                }
-            }
-        }
-        photoCache.set(cacheKey, null);
-        return null;
-    } catch(error) {
-        console.error(`Ошибка получения фото из листа ${sheetName}:`, error);
-        return null;
-    }
-}
-
-// Показ фото детали
-async function showPhotoForTransfer(transfer) {
-    const partNumber = transfer.partNumber;
-    // Определяем склад, где сейчас находится деталь: если статус открыт — деталь на складе "to", если закрыт — деталь вернулась в "from"
-    // Логичнее: фото детали хранится на листе склада-источника (откуда деталь изначально пришла) либо в зависимости от контекста.
-    // По заданию: фото в листах BB, KH, SKYMALL. Для детали нужно понять её "родной" склад? 
-    // Лучше: пользователь хочет фото детали, ищем по всем трём листам (BB, KH, SKYMALL) по номеру детали.
-    // Это наиболее удобно — находим деталь в любом из складов.
-    
-    showToast('🔍 Ищем фото детали...', false);
-    
+// Функция получения фото детали из столбца D (индекс 3) на листах BB, KH, SKYMALL
+// Формат: колонка A (индекс 0) — номер детали, колонка D (индекс 3) — ссылка на фото
+async function fetchPhotoFromSheets(partNumber) {
     const sheetsToCheck = ['BB', 'KH', 'SKYMALL'];
-    let foundPhoto = null;
-    let foundSheet = null;
     
     for (const sheet of sheetsToCheck) {
         const cacheKey = `${sheet}|${partNumber}`;
         if (photoCache.has(cacheKey)) {
-            foundPhoto = photoCache.get(cacheKey);
-            if (foundPhoto) {
-                foundSheet = sheet;
-                break;
-            }
+            const cached = photoCache.get(cacheKey);
+            if (cached) return cached;
             continue;
         }
         
@@ -809,39 +743,59 @@ async function showPhotoForTransfer(transfer) {
                 gapiInitialized = true;
             }
             
+            // Запрашиваем колонки A и D (A:D, но нас интересуют A и D)
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: AUTH_SPREADSHEET_ID,
-                range: `${sheet}!A:B`,
+                range: `${sheet}!A:D`, // A (номер детали) и D (ссылка на фото)
             });
             const rows = response.result.values || [];
             for (let i = 0; i < rows.length; i++) {
-                if (rows[i][0] && rows[i][0].toString().trim() === partNumber.toString().trim()) {
-                    const url = rows[i][1] ? rows[i][1].trim() : null;
-                    if (url && (url.startsWith('http') || url.startsWith('data:image'))) {
-                        foundPhoto = url;
-                        foundSheet = sheet;
-                        photoCache.set(`${sheet}|${partNumber}`, url);
-                        break;
+                const rowPartNumber = rows[i][0] ? rows[i][0].toString().trim() : '';
+                if (rowPartNumber === partNumber.toString().trim()) {
+                    // Фото в колонке D (индекс 3)
+                    const photoUrl = rows[i][3] ? rows[i][3].trim() : null;
+                    if (photoUrl && (photoUrl.startsWith('http') || photoUrl.startsWith('data:image') || photoUrl.startsWith('//'))) {
+                        photoCache.set(cacheKey, photoUrl);
+                        return photoUrl;
                     } else {
-                        photoCache.set(`${sheet}|${partNumber}`, null);
+                        photoCache.set(cacheKey, null);
+                        break;
                     }
                 }
             }
-            if (foundPhoto) break;
+            // Если не нашли, кешируем null
+            if (!photoCache.has(cacheKey)) {
+                photoCache.set(cacheKey, null);
+            }
         } catch(e) {
             console.warn(`Ошибка при проверке листа ${sheet}:`, e);
+            photoCache.set(`${sheet}|${partNumber}`, null);
         }
     }
+    return null;
+}
+
+// Показ фото детали
+async function showPhotoForTransfer(transfer) {
+    const partNumber = transfer.partNumber;
+    if (!partNumber) {
+        showToast('Номер детали не указан', true);
+        return;
+    }
     
-    if (foundPhoto) {
+    showToast('🔍 Ищем фото детали...', false);
+    
+    const photoUrl = await fetchPhotoFromSheets(partNumber);
+    
+    if (photoUrl) {
         const modal = document.getElementById('photoModal');
         const modalImg = document.getElementById('modalImage');
         const caption = document.getElementById('modalCaption');
-        modalImg.src = foundPhoto;
-        caption.textContent = `Деталь: ${partNumber} (${foundSheet})`;
+        modalImg.src = photoUrl;
+        caption.textContent = `Деталь: ${partNumber}`;
         modal.style.display = 'flex';
     } else {
-        showToast(`📷 Фото для детали "${partNumber}" не найдено в листах BB, KH, SKYMALL`, true);
+        showToast(`📷 Фото для детали "${partNumber}" не найдено в столбце D листов BB, KH, SKYMALL`, true);
     }
 }
 
