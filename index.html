@@ -75,7 +75,7 @@ h3{
     color:#0f172a;
 }
 
-/* ========== КАРТОЧКА: заголовок слева / значение справа, кликабельна ========== */
+/* ========== КАРТОЧКА: заголовок слева / значение справа ========== */
 .card{
     background:#ffffff;
     border:1px solid #edf2f7;
@@ -84,23 +84,11 @@ h3{
     margin-bottom:12px;
     transition: all 0.15s;
     box-shadow:0 1px 2px rgba(0,0,0,0.02);
-    cursor: pointer;
-}
-
-.card:hover {
-    background: #fefefe;
-    border-color: #d1dbe8;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-}
-
-.card:active {
-    transform: scale(0.99);
 }
 
 .info-table{
     width:100%;
     border-collapse: collapse;
-    pointer-events: none; /* чтобы клик проходил на карточку, а не на таблицу */
 }
 
 .info-table tr{
@@ -132,7 +120,7 @@ h3{
     word-break:break-word;
 }
 
-/* СТАТУС: Активно -> #dc143c , Закрыто -> #1a2f40 */
+/* СТАТУС: Активно -> #dc143c (малиново-красный), Закрыто -> #1a2f40 (тёмный графит) */
 .status-open{
     color: #dc143c;
     font-weight:600;
@@ -153,7 +141,6 @@ h3{
     border-top:1px solid #f0f4f9;
     justify-content: space-between;
     align-items: center;
-    pointer-events: auto; /* кнопки должны быть активны */
 }
 
 /* общий стиль для обеих кнопок действий - скругление 10px */
@@ -171,7 +158,7 @@ h3{
     min-width: 0;
 }
 
-/* кнопка ВЕРНУТЬ — цвет #1a2f40 */
+/* кнопка ВЕРНУТЬ — цвет #1a2f40 (как и переместить) */
 .close-btn {
     background: #1a2f40;
     color: white;
@@ -182,7 +169,7 @@ h3{
     background: #0f232f;
 }
 
-/* кнопка УДАЛИТЬ - светлая */
+/* кнопка УДАЛИТЬ - светлая, скругление 10px */
 .secondary-btn {
     background: #f1f5f9;
     color: #1e293b;
@@ -192,68 +179,6 @@ h3{
 
 .secondary-btn:hover {
     background: #e2e8f0;
-}
-
-/* Модальное окно для фото */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.85);
-    backdrop-filter: blur(8px);
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-}
-
-.modal-content {
-    max-width: 90%;
-    max-height: 85%;
-    border-radius: 24px;
-    box-shadow: 0 20px 35px rgba(0,0,0,0.4);
-    object-fit: contain;
-    background: #1a2f40;
-    padding: 8px;
-}
-
-.modal-caption {
-    text-align: center;
-    color: white;
-    margin-top: 16px;
-    font-size: 16px;
-    font-weight: 500;
-    background: rgba(0,0,0,0.6);
-    display: inline-block;
-    padding: 6px 18px;
-    border-radius: 40px;
-    backdrop-filter: blur(4px);
-}
-
-.close-modal {
-    position: absolute;
-    top: 24px;
-    right: 32px;
-    color: white;
-    font-size: 42px;
-    font-weight: 300;
-    cursor: pointer;
-    background: rgba(0,0,0,0.5);
-    width: 48px;
-    height: 48px;
-    border-radius: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: 0.2s;
-}
-
-.close-modal:hover {
-    background: #dc143c;
-    transform: scale(1.05);
 }
 
 /* Адаптация под маленькие экраны */
@@ -270,15 +195,9 @@ h3{
     .info-table td {
         padding: 12px 12px;
     }
-    .close-modal {
-        top: 16px;
-        right: 20px;
-        font-size: 36px;
-        width: 44px;
-        height: 44px;
-    }
 }
 
+/* на десктопе чуть шире */
 @media (min-width: 600px) {
     .actions {
         justify-content: space-between;
@@ -514,18 +433,9 @@ h3{
             <option>SKYMALL</option>
             <option>LUCKY STRIKE KH</option>
         </select>
-        <button id="moveBtn" onclick="moveAsync()">➡️ Переместить деталь</button>
+        <button id="moveBtn" onclick="moveAsync()">Переместить деталь</button>
         <h3>История перемещений</h3>
         <div id="list"></div>
-    </div>
-</div>
-
-<!-- Модальное окно для фото детали -->
-<div id="photoModal" class="modal">
-    <span class="close-modal">&times;</span>
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-        <img class="modal-content" id="modalImage" alt="Фото детали">
-        <div id="modalCaption" class="modal-caption"></div>
     </div>
 </div>
 
@@ -541,19 +451,8 @@ const CURRENT_SITE = window.location.href.split('?')[0];
 // ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMyUTi-1BqBUF9VtzVW7wcvWjJOTtLSpbNFp6uuCqHq1z041FRiNcNzM8T137GdpM/exec';
 
-// Маппинг названий складов на имена листов для фото
-const WAREHOUSE_TO_SHEET = {
-    'BLOCKBUSTER': 'BB',
-    'LUCKY STRIKE KH': 'KH',
-    'SKYMALL': 'SKYMALL'
-};
-
-// Кэш для фото: key "sheetName|partNumber" -> url
-let photoCache = new Map();
-
 let currentUser = null;
 let currentUserNameFromSheet = null;
-let gapiInitialized = false;
 
 function showToast(message, isError = false) {
     const toast = document.createElement('div');
@@ -720,86 +619,7 @@ async function delRowAsync(row){
     }
 }
 
-// Функция получения фото детали из столбца D (индекс 3) на листах BB, KH, SKYMALL
-// Формат: колонка A (индекс 0) — номер детали, колонка D (индекс 3) — ссылка на фото
-async function fetchPhotoFromSheets(partNumber) {
-    const sheetsToCheck = ['BB', 'KH', 'SKYMALL'];
-    
-    for (const sheet of sheetsToCheck) {
-        const cacheKey = `${sheet}|${partNumber}`;
-        if (photoCache.has(cacheKey)) {
-            const cached = photoCache.get(cacheKey);
-            if (cached) return cached;
-            continue;
-        }
-        
-        try {
-            if (!gapiInitialized) {
-                await loadSheetsAPI();
-                await gapi.client.init({
-                    apiKey: AUTH_API_KEY,
-                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                });
-                gapiInitialized = true;
-            }
-            
-            // Запрашиваем колонки A и D (A:D, но нас интересуют A и D)
-            const response = await gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: AUTH_SPREADSHEET_ID,
-                range: `${sheet}!A:D`, // A (номер детали) и D (ссылка на фото)
-            });
-            const rows = response.result.values || [];
-            for (let i = 0; i < rows.length; i++) {
-                const rowPartNumber = rows[i][0] ? rows[i][0].toString().trim() : '';
-                if (rowPartNumber === partNumber.toString().trim()) {
-                    // Фото в колонке D (индекс 3)
-                    const photoUrl = rows[i][3] ? rows[i][3].trim() : null;
-                    if (photoUrl && (photoUrl.startsWith('http') || photoUrl.startsWith('data:image') || photoUrl.startsWith('//'))) {
-                        photoCache.set(cacheKey, photoUrl);
-                        return photoUrl;
-                    } else {
-                        photoCache.set(cacheKey, null);
-                        break;
-                    }
-                }
-            }
-            // Если не нашли, кешируем null
-            if (!photoCache.has(cacheKey)) {
-                photoCache.set(cacheKey, null);
-            }
-        } catch(e) {
-            console.warn(`Ошибка при проверке листа ${sheet}:`, e);
-            photoCache.set(`${sheet}|${partNumber}`, null);
-        }
-    }
-    return null;
-}
-
-// Показ фото детали
-async function showPhotoForTransfer(transfer) {
-    const partNumber = transfer.partNumber;
-    if (!partNumber) {
-        showToast('Номер детали не указан', true);
-        return;
-    }
-    
-    showToast('🔍 Ищем фото детали...', false);
-    
-    const photoUrl = await fetchPhotoFromSheets(partNumber);
-    
-    if (photoUrl) {
-        const modal = document.getElementById('photoModal');
-        const modalImg = document.getElementById('modalImage');
-        const caption = document.getElementById('modalCaption');
-        modalImg.src = photoUrl;
-        caption.textContent = `Деталь: ${partNumber}`;
-        modal.style.display = 'flex';
-    } else {
-        showToast(`📷 Фото для детали "${partNumber}" не найдено в столбце D листов BB, KH, SKYMALL`, true);
-    }
-}
-
-// Рендер с кликом для фото
+// Рендер: статус "Активно" #dc143c, "Закрыто" #1a2f40, кнопка Вернуть #1a2f40
 function render(transfers){
     const container = document.getElementById('list');
     
@@ -819,13 +639,6 @@ function render(transfers){
     sorted.forEach(transfer => {
         const div = document.createElement('div');
         div.className = 'card';
-        // Клик по карточке — показать фото
-        div.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' || e.target.closest('.action-btn')) {
-                return;
-            }
-            showPhotoForTransfer(transfer);
-        });
 
         let dateStr = 'Дата не указана';
         if (transfer.timestamp) {
@@ -851,8 +664,9 @@ function render(transfers){
             }
         }
         
+        // Цвета статуса: открыт → #dc143c, закрыт → #1a2f40
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
-        const statusText = transfer.status === 'open' ? '● Активно' : '✓ Закрыто';
+        const statusText = transfer.status === 'open' ? '● Задолженность' : '✓ Закрыто';
         
         const table = document.createElement('table');
         table.className = 'info-table';
@@ -887,6 +701,7 @@ function render(transfers){
         
         div.appendChild(table);
         
+        // Блок действий с кнопками: Вернуть (цвет #1a2f40, слева) и Удалить (справа)
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
         
@@ -894,7 +709,7 @@ function render(transfers){
             const returnBtn = document.createElement('button');
             returnBtn.textContent = 'Вернуть';
             returnBtn.className = 'action-btn close-btn';
-            returnBtn.style.background = '#1a2f40';
+            returnBtn.style.background = '#1a2f40';   // Явно задаём #1a2f40
             returnBtn.onclick = (e) => {
                 e.stopPropagation();
                 closeTransferAsync(
@@ -916,6 +731,8 @@ function render(transfers){
             delRowAsync(transfer.row);
         };
         
+        // Если запись открыта (есть кнопка Вернуть), обе кнопки встанут по краям через justify-content: space-between
+        // Если записи закрыты (нет кнопки Вернуть), то кнопку удаления прижимаем вправо
         if (transfer.status !== 'open') {
             deleteBtn.style.marginLeft = 'auto';
             deleteBtn.style.flex = '0 0 auto';
@@ -944,10 +761,6 @@ function escapeHtml(str){
 
 function loadSheetsAPI() {
     return new Promise((resolve, reject) => {
-        if (window.gapi && gapi.client && gapi.client.sheets) {
-            resolve();
-            return;
-        }
         gapi.load('client', {
             callback: () => resolve(),
             onerror: () => reject('Ошибка загрузки Google API'),
@@ -1008,7 +821,7 @@ async function initAndCheckEmail() {
             apiKey: AUTH_API_KEY,
             discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
         });
-        gapiInitialized = true;
+        
         await checkEmailAndSiteInSheet(currentUser.email);
         
     } catch (error) {
@@ -1106,23 +919,13 @@ function parseJwt(token) {
 function signOut() {
     localStorage.clear();
     sessionStorage.clear();
-    photoCache.clear();
-    gapiInitialized = false;
+    
     if (google && google.accounts && google.accounts.id) {
         google.accounts.id.disableAutoSelect();
     }
+    
     location.reload();
 }
-
-// Закрытие модального окна
-document.querySelector('.close-modal').addEventListener('click', () => {
-    document.getElementById('photoModal').style.display = 'none';
-});
-document.getElementById('photoModal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('photoModal')) {
-        document.getElementById('photoModal').style.display = 'none';
-    }
-});
 
 window.moveAsync = moveAsync;
 window.closeTransferAsync = closeTransferAsync;
@@ -1158,10 +961,7 @@ window.addEventListener('load', function() {
                 apiKey: AUTH_API_KEY,
                 discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
             }))
-            .then(() => {
-                gapiInitialized = true;
-                return checkEmailAndSiteInSheet(email);
-            })
+            .then(() => checkEmailAndSiteInSheet(email))
             .then(() => loadAsync())
             .catch(() => signOut());
     } else {
