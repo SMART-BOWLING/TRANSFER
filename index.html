@@ -40,10 +40,16 @@ button{
     border:none;
     font-weight:600;
     cursor:pointer;
+    transition: all 0.2s;
 }
 
 button:hover{
     background:#374151;
+}
+
+button:disabled{
+    opacity:0.6;
+    cursor:not-allowed;
 }
 
 h3{
@@ -57,6 +63,7 @@ h3{
     padding:12px;
     margin-bottom:10px;
     background:#fff;
+    transition: all 0.2s;
 }
 
 .meta{
@@ -227,6 +234,32 @@ h3{
 #main-content {
     display: none;
 }
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-size: 14px;
+    z-index: 1000;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
 </style>
 </head>
 
@@ -281,7 +314,7 @@ h3{
             <option>SKYMALL</option>
             <option>LUCKY STRIKE KH</option>
         </select>
-        <button onclick="move()">➡️ Переместить деталь</button>
+        <button id="moveBtn" onclick="moveAsync()">➡️ Переместить деталь</button>
         <h3>История перемещений</h3>
         <div id="list"></div>
     </div>
@@ -294,187 +327,24 @@ h3{
 const AUTH_SPREADSHEET_ID = '1-yiVdZYa6wJdupTiuiHvI_ht3Vu73RUjyCehZqs2cJ4';
 const AUTH_SHEET_NAME = '1';
 const AUTH_API_KEY = 'AIzaSyAXL0Hsfxy-g-AgYhnivj4x9gCB2rrtF-0';
-const CURRENT_SITE = 'https://smart-bowling.github.io/TRANSFER/';
+const CURRENT_SITE = window.location.href.split('?')[0];
 
 // ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTZaj0QTdHKrMsOwVCeTKQSmkcRHf9iUXcsOZaaVi_98gTP7ZTqGtwkibfw3ADeHFl/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb2nhKhQ3RAc8kOisuNyyL0RlabHN4mVQx0ACJOUdykscSLs8Yv1J6NlCuasjPtkY/exec';
 
 let currentUser = null;
 let currentUserNameFromSheet = null;
 
-// ============ Функции авторизации ============
-
-function loadSheetsAPI() {
-    return new Promise((resolve, reject) => {
-        gapi.load('client', {
-            callback: () => resolve(),
-            onerror: () => reject('Ошибка загрузки Google API'),
-            timeout: 10000,
-            ontimeout: () => reject('Таймаут загрузки Google API')
-        });
-    });
+function showToast(message, isError = false) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    toast.style.background = isError ? '#dc2626' : '#10b981';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-function handleCredentialResponse(response) {
-    try {
-        const payload = parseJwt(response.credential);
-        
-        currentUser = {
-            email: payload.email.toLowerCase().trim(),
-            name: payload.name,
-            picture: payload.picture
-        };
-        
-        showLoading(true);
-        initAndCheckEmail();
-        
-    } catch (e) {
-        console.error('Ошибка аутентификации:', e);
-        showLoading(false);
-        alert('Ошибка аутентификации');
-    }
-}
-
-function showLoading(show) {
-    const container = document.getElementById('login-container');
-    if (show) {
-        if (!container.hasAttribute('data-original')) {
-            container.setAttribute('data-original', container.innerHTML);
-        }
-        container.innerHTML = '<div style="padding:40px;text-align:center;"><div class="loading-spinner"></div><br><span style="color:#64748b;">Проверка доступа...</span></div>';
-    } else {
-        if (container.getAttribute('data-original') && document.getElementById('login-section').style.display !== 'none') {
-            container.innerHTML = container.getAttribute('data-original');
-            if (window.google && google.accounts && google.accounts.id) {
-                google.accounts.id.renderButton(document.querySelector('.g_id_signin'), {
-                    type: 'standard',
-                    shape: 'pill',
-                    theme: 'outline',
-                    text: 'signin_with',
-                    size: 'large',
-                    logo_alignment: 'left'
-                });
-            }
-        }
-    }
-}
-
-async function initAndCheckEmail() {
-    try {
-        await loadSheetsAPI();
-        await gapi.client.init({
-            apiKey: AUTH_API_KEY,
-            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-        });
-        
-        await checkEmailAndSiteInSheet(currentUser.email);
-        
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        showLoading(false);
-        alert('Ошибка инициализации Google API');
-    }
-}
-
-async function checkEmailAndSiteInSheet(email) {
-    try {
-        const response = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: AUTH_SPREADSHEET_ID,
-            range: `${AUTH_SHEET_NAME}!A:Z`,
-        });
-        
-        const rows = response.result.values;
-        if (!rows || rows.length === 0) {
-            showLoading(false);
-            alert('Таблица пуста');
-            return;
-        }
-        
-        let hasAccess = false;
-        let foundName = null;
-        
-        for (let i = 0; i < rows.length; i++) {
-            if (!rows[i][0]) continue;
-            
-            const rowEmail = rows[i][0].toLowerCase().trim();
-            if (rowEmail === email) {
-                for (let j = 1; j < rows[i].length; j++) {
-                    const site = rows[i][j]?.trim().split('?')[0];
-                    if (site === CURRENT_SITE || site?.includes('TRANSFER')) {
-                        hasAccess = true;
-                        break;
-                    }
-                }
-                if (rows[i][1]) {
-                    foundName = rows[i][1].trim();
-                }
-                break;
-            }
-        }
-        
-        if (hasAccess) {
-            currentUserNameFromSheet = foundName || currentUser.name;
-            loginUser(currentUser);
-        } else {
-            showLoading(false);
-            alert('Доступ запрещен: Ваш email не найден в таблице или у вас нет доступа к этому сайту');
-        }
-        
-    } catch (error) {
-        console.error('Ошибка доступа к таблице:', error);
-        showLoading(false);
-        alert('Ошибка доступа к таблице');
-    }
-}
-
-function loginUser(payload) {
-    document.getElementById('login-section').style.display = 'none';
-    document.getElementById('user-info').style.display = 'flex';
-    document.getElementById('main-content').style.display = 'block';
-    
-    document.getElementById('user-pic').src = payload.picture;
-    document.getElementById('user-name').textContent = currentUserNameFromSheet || payload.name;
-    document.getElementById('user-email').textContent = payload.email;
-    
-    localStorage.setItem('userLoggedIn', 'true');
-    localStorage.setItem('userEmail', payload.email.toLowerCase());
-    localStorage.setItem('userName', payload.name);
-    localStorage.setItem('userNameFromSheet', currentUserNameFromSheet || payload.name);
-    localStorage.setItem('userPic', payload.picture);
-    
-    showLoading(false);
-    
-    load();
-}
-
-function parseJwt(token) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        console.error('Ошибка парсинга JWT:', e);
-        return {};
-    }
-}
-
-function signOut() {
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    if (google && google.accounts && google.accounts.id) {
-        google.accounts.id.disableAutoSelect();
-    }
-    
-    location.reload();
-}
-
-// ============ Функции учёта деталей ============
-
-function callScript(functionName, data = null) {
+function callScriptAsync(functionName, data = null) {
     return new Promise((resolve, reject) => {
         const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
@@ -511,11 +381,12 @@ function callScript(functionName, data = null) {
     });
 }
 
-async function load(){
-    document.getElementById('list').innerHTML = '<div class="loading">Загрузка...</div>';
+async function loadAsync(){
+    const container = document.getElementById('list');
+    container.innerHTML = '<div class="loading"><div class="loading-spinner" style="width:30px;height:30px;"></div><br>Загрузка...</div>';
     
     try {
-        const transfers = await callScript('getTransfers');
+        const transfers = await callScriptAsync('getTransfers');
         if (Array.isArray(transfers)) {
             render(transfers);
         } else {
@@ -523,38 +394,42 @@ async function load(){
         }
     } catch(error) {
         console.error('Load error:', error);
-        document.getElementById('list').innerHTML = 
-            '<div class="empty">Ошибка загрузки: ' + escapeHtml(error.message) + '</div>';
+        container.innerHTML = '<div class="empty">❌ Ошибка загрузки: ' + escapeHtml(error.message) + '</div>';
     }
 }
 
-async function move(){
+async function moveAsync(){
     const partNumberInput = document.getElementById('partNumber');
     const quantityInput = document.getElementById('quantity');
+    const moveBtn = document.getElementById('moveBtn');
     
     const partNumber = partNumberInput.value.trim();
     const quantityVal = quantityInput.value.trim();
     
     if(!partNumber){
-        alert('Введите номер детали');
+        showToast('Введите номер детали', true);
         return;
     }
     
     if(!quantityVal || parseInt(quantityVal) <= 0){
-        alert('Введите корректное количество (больше 0)');
+        showToast('Введите корректное количество (больше 0)', true);
         return;
     }
     
     if(document.getElementById('from').value === document.getElementById('to').value){
-        alert('Нельзя перемещать деталь в тот же склад');
+        showToast('Нельзя перемещать деталь в тот же склад', true);
         return;
     }
 
     const fromSelect = document.getElementById('from');
     const toSelect = document.getElementById('to');
+    
+    const originalText = moveBtn.innerHTML;
+    moveBtn.innerHTML = '⏳ Перемещение...';
+    moveBtn.disabled = true;
 
     try {
-        await callScript('transferPart', {
+        await callScriptAsync('transferPart', {
             partNumber: partNumber,
             quantity: parseInt(quantityVal),
             from: fromSelect.value,
@@ -565,61 +440,62 @@ async function move(){
         partNumberInput.value = '';
         quantityInput.value = '1';
         
-        load();
-        alert('Деталь успешно перемещена!');
+        await loadAsync();
+        showToast('✅ Деталь успешно перемещена!');
     } catch(error) {
-        alert('Ошибка: ' + error.message);
+        showToast('❌ Ошибка: ' + error.message, true);
+    } finally {
+        moveBtn.innerHTML = originalText;
+        moveBtn.disabled = false;
     }
 }
 
-async function closeTransfer(row, partNumber, from, to, maxQuantity){
-    // Запрашиваем количество для возврата
+async function closeTransferAsync(row, partNumber, from, to, maxQuantity){
     let returnQuantity = prompt(`Сколько деталей "${partNumber}" вернуть обратно в ${from}?\n(Доступно для возврата: ${maxQuantity})`, maxQuantity);
     
     if (returnQuantity === null) {
-        return; // Пользователь отменил
+        return;
     }
     
     returnQuantity = parseInt(returnQuantity);
     
     if (isNaN(returnQuantity) || returnQuantity <= 0) {
-        alert('Введите корректное количество (больше 0)');
+        showToast('Введите корректное количество (больше 0)', true);
         return;
     }
     
     if (returnQuantity > maxQuantity) {
-        alert(`Нельзя вернуть больше ${maxQuantity} шт.`);
+        showToast(`Нельзя вернуть больше ${maxQuantity} шт.`, true);
         return;
     }
     
     try {
-        // Сначала возвращаем детали (добавляем в исходный склад)
         if (returnQuantity > 0) {
-            await callScript('returnPart', {
+            await callScriptAsync('returnPart', {
                 partNumber: partNumber,
                 quantity: returnQuantity,
-                to: to,      // откуда возвращаем (куда было перемещено)
-                from: from   // куда возвращаем (откуда брали)
+                to: to,
+                from: from
             });
         }
         
-        // Затем закрываем/удаляем запись о перемещении
-        await callScript('closeTransfer', row);
+        await callScriptAsync('closeTransfer', row);
         
-        load();
-        alert(`Возвращено ${returnQuantity} шт. в ${from}`);
+        await loadAsync();
+        showToast(`✅ Возвращено ${returnQuantity} шт. в ${from}`);
     } catch(error) {
-        alert('Ошибка: ' + error.message);
+        showToast('❌ Ошибка: ' + error.message, true);
     }
 }
 
-async function delRow(row){
+async function delRowAsync(row){
     if(confirm('Удалить запись навсегда?')){
         try {
-            await callScript('deleteTransfer', row);
-            load();
+            await callScriptAsync('deleteTransfer', row);
+            await loadAsync();
+            showToast('✅ Запись удалена');
         } catch(error) {
-            alert('Ошибка: ' + error.message);
+            showToast('❌ Ошибка: ' + error.message, true);
         }
     }
 }
@@ -628,7 +504,7 @@ function render(transfers){
     const container = document.getElementById('list');
     
     if(!transfers || transfers.length === 0){
-        container.innerHTML = '<div class="empty">Нет перемещений</div>';
+        container.innerHTML = '<div class="empty">📭 Нет перемещений</div>';
         return;
     }
 
@@ -664,27 +540,27 @@ function render(transfers){
             try {
                 const closedDate = new Date(transfer.closedAt);
                 if (!isNaN(closedDate.getTime())) {
-                    closedInfo = `<div class="meta">Закрыто: ${closedDate.toLocaleString('ru-RU')}</div>`;
+                    closedInfo = `<div class="meta">🔒 Закрыто: ${closedDate.toLocaleString('ru-RU')}</div>`;
                 }
             } catch(e) {
-                closedInfo = `<div class="meta">Закрыто: ${transfer.closedAt}</div>`;
+                closedInfo = `<div class="meta">🔒 Закрыто: ${transfer.closedAt}</div>`;
             }
         }
 
         div.innerHTML = `
-            <b>${escapeHtml(transfer.partNumber || 'Без номера')}</b>
-            <div class="meta">Количество: <strong>${escapeHtml(transfer.quantity)}</strong> шт.</div>
-            <div class="meta">Создано: ${dateStr}</div>
+            <b>🔧 ${escapeHtml(transfer.partNumber || 'Без номера')}</b>
+            <div class="meta">📦 Количество: <strong>${escapeHtml(transfer.quantity)}</strong> шт.</div>
+            <div class="meta">🕒 Создано: ${dateStr}</div>
             <div class="meta">📤 Из: ${escapeHtml(transfer.from || '—')}</div>
             <div class="meta">📥 В: ${escapeHtml(transfer.to || '—')}</div>
             <div class="meta ${statusClass}">${statusText}</div>
             ${closedInfo}
             <div class="actions">
                 ${transfer.status === 'open'
-                    ? `<button class="close-btn" onclick="closeTransfer(${transfer.row}, '${escapeHtml(transfer.partNumber)}', '${escapeHtml(transfer.from)}', '${escapeHtml(transfer.to)}', ${transfer.quantity})">✅ Закрыть (вернуть детали)</button>`
+                    ? `<button class="close-btn" onclick="closeTransferAsync(${transfer.row}, '${escapeHtml(transfer.partNumber)}', '${escapeHtml(transfer.from)}', '${escapeHtml(transfer.to)}', ${transfer.quantity})">✅ Закрыть (вернуть детали)</button>`
                     : ''
                 }
-                <button class="secondary" onclick="delRow(${transfer.row})">🗑️ Удалить</button>
+                <button class="secondary" onclick="delRowAsync(${transfer.row})">🗑️ Удалить</button>
             </div>
         `;
 
@@ -703,7 +579,181 @@ function escapeHtml(str){
         .replace(/'/g, '&#39;');
 }
 
-// ============ Инициализация Google Sign-In и проверка сессии ============
+// ============ Функции авторизации ============
+
+function loadSheetsAPI() {
+    return new Promise((resolve, reject) => {
+        gapi.load('client', {
+            callback: () => resolve(),
+            onerror: () => reject('Ошибка загрузки Google API'),
+            timeout: 10000,
+            ontimeout: () => reject('Таймаут загрузки Google API')
+        });
+    });
+}
+
+function handleCredentialResponse(response) {
+    try {
+        const payload = parseJwt(response.credential);
+        
+        currentUser = {
+            email: payload.email.toLowerCase().trim(),
+            name: payload.name,
+            picture: payload.picture
+        };
+        
+        showLoadingAuth(true);
+        initAndCheckEmail();
+        
+    } catch (e) {
+        console.error('Ошибка аутентификации:', e);
+        showLoadingAuth(false);
+        alert('Ошибка аутентификации');
+    }
+}
+
+function showLoadingAuth(show) {
+    const container = document.getElementById('login-container');
+    if (show) {
+        if (!container.hasAttribute('data-original')) {
+            container.setAttribute('data-original', container.innerHTML);
+        }
+        container.innerHTML = '<div style="padding:40px;text-align:center;"><div class="loading-spinner"></div><br><span style="color:#64748b;">Проверка доступа...</span></div>';
+    } else {
+        if (container.getAttribute('data-original') && document.getElementById('login-section').style.display !== 'none') {
+            container.innerHTML = container.getAttribute('data-original');
+            if (window.google && google.accounts && google.accounts.id) {
+                google.accounts.id.renderButton(document.querySelector('.g_id_signin'), {
+                    type: 'standard',
+                    shape: 'pill',
+                    theme: 'outline',
+                    text: 'signin_with',
+                    size: 'large',
+                    logo_alignment: 'left'
+                });
+            }
+        }
+    }
+}
+
+async function initAndCheckEmail() {
+    try {
+        await loadSheetsAPI();
+        await gapi.client.init({
+            apiKey: AUTH_API_KEY,
+            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+        });
+        
+        await checkEmailAndSiteInSheet(currentUser.email);
+        
+    } catch (error) {
+        console.error('Ошибка инициализации:', error);
+        showLoadingAuth(false);
+        alert('Ошибка инициализации Google API');
+    }
+}
+
+async function checkEmailAndSiteInSheet(email) {
+    try {
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: AUTH_SPREADSHEET_ID,
+            range: `${AUTH_SHEET_NAME}!A:Z`,
+        });
+        
+        const rows = response.result.values;
+        if (!rows || rows.length === 0) {
+            showLoadingAuth(false);
+            alert('Таблица пуста');
+            return;
+        }
+        
+        let hasAccess = false;
+        let foundName = null;
+        
+        for (let i = 0; i < rows.length; i++) {
+            if (!rows[i][0]) continue;
+            
+            const rowEmail = rows[i][0].toLowerCase().trim();
+            if (rowEmail === email) {
+                for (let j = 1; j < rows[i].length; j++) {
+                    const site = rows[i][j]?.trim().split('?')[0];
+                    if (site === CURRENT_SITE || site?.includes('TRANSFER')) {
+                        hasAccess = true;
+                        break;
+                    }
+                }
+                if (rows[i][1]) {
+                    foundName = rows[i][1].trim();
+                }
+                break;
+            }
+        }
+        
+        if (hasAccess) {
+            currentUserNameFromSheet = foundName || currentUser.name;
+            loginUser(currentUser);
+        } else {
+            showLoadingAuth(false);
+            alert('Доступ запрещен: Ваш email не найден в таблице или у вас нет доступа к этому сайту');
+        }
+        
+    } catch (error) {
+        console.error('Ошибка доступа к таблице:', error);
+        showLoadingAuth(false);
+        alert('Ошибка доступа к таблице');
+    }
+}
+
+function loginUser(payload) {
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('user-info').style.display = 'flex';
+    document.getElementById('main-content').style.display = 'block';
+    
+    document.getElementById('user-pic').src = payload.picture;
+    document.getElementById('user-name').textContent = currentUserNameFromSheet || payload.name;
+    document.getElementById('user-email').textContent = payload.email;
+    
+    localStorage.setItem('userLoggedIn', 'true');
+    localStorage.setItem('userEmail', payload.email.toLowerCase());
+    localStorage.setItem('userName', payload.name);
+    localStorage.setItem('userNameFromSheet', currentUserNameFromSheet || payload.name);
+    localStorage.setItem('userPic', payload.picture);
+    
+    showLoadingAuth(false);
+    
+    loadAsync();
+}
+
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        console.error('Ошибка парсинга JWT:', e);
+        return {};
+    }
+}
+
+function signOut() {
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    if (google && google.accounts && google.accounts.id) {
+        google.accounts.id.disableAutoSelect();
+    }
+    
+    location.reload();
+}
+
+window.moveAsync = moveAsync;
+window.closeTransferAsync = closeTransferAsync;
+window.delRowAsync = delRowAsync;
+window.signOut = signOut;
+window.handleCredentialResponse = handleCredentialResponse;
 
 window.addEventListener('load', function() {
     const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
@@ -728,14 +778,13 @@ window.addEventListener('load', function() {
         };
         currentUserNameFromSheet = nameSheet || name;
         
-        showLoading(true);
         loadSheetsAPI()
             .then(() => gapi.client.init({
                 apiKey: AUTH_API_KEY,
                 discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
             }))
             .then(() => checkEmailAndSiteInSheet(email))
-            .then(() => load())
+            .then(() => loadAsync())
             .catch(() => signOut());
     } else {
         document.getElementById('login-section').style.display = 'flex';
@@ -748,25 +797,20 @@ window.addEventListener('load', function() {
                 callback: handleCredentialResponse
             });
             
-            google.accounts.id.renderButton(
-                document.querySelector('.g_id_signin'),
-                { 
+            const signinDiv = document.querySelector('.g_id_signin');
+            if (signinDiv) {
+                google.accounts.id.renderButton(signinDiv, { 
                     type: 'standard', 
                     shape: 'pill', 
                     theme: 'outline', 
                     text: 'signin_with', 
                     size: 'large',
                     logo_alignment: 'left'
-                }
-            );
+                });
+            }
         }
     }
 });
-
-window.move = move;
-window.closeTransfer = closeTransfer;
-window.delRow = delRow;
-window.signOut = signOut;
 </script>
 
 </body>
