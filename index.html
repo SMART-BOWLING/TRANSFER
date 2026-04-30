@@ -42,6 +42,17 @@ input:focus, select:focus{
     box-shadow:0 0 0 2px rgba(148,163,184,0.1);
 }
 
+/* Основная кнопка ПЕРЕМЕСТИТЬ ДЕТАЛЬ – цвет #1a2f40 */
+#moveBtn {
+    background: #1a2f40;
+    color: white;
+    border: none;
+}
+
+#moveBtn:hover {
+    background: #0f232f;
+}
+
 button{
     background:#1e293b;
     color:#fff;
@@ -49,10 +60,6 @@ button{
     font-weight:500;
     cursor:pointer;
     transition: all 0.2s;
-}
-
-button:hover{
-    background:#0f172a;
 }
 
 button:disabled{
@@ -113,15 +120,16 @@ h3{
     word-break:break-word;
 }
 
+/* СТАТУС: Активно -> #dc143c (малиново-красный), Закрыто -> #1a2f40 (тёмный графит) */
 .status-open{
-    color:#e67e22;
-    font-weight:500;
+    color: #dc143c;
+    font-weight:600;
     display:inline-block;
 }
 
 .status-closed{
-    color:#10b981;
-    font-weight:500;
+    color: #1a2f40;
+    font-weight:600;
 }
 
 /* ========== КНОПКИ ДЕЙСТВИЙ: слева и справа на телефоне ========== */
@@ -135,14 +143,14 @@ h3{
     align-items: center;
 }
 
-/* общий стиль для обеих кнопок - скругление 10px (не слишком большое) */
+/* общий стиль для обеих кнопок действий - скругление 10px */
 .action-btn {
     flex: 1;
     width: auto;
     padding: 12px 8px;
     font-size: 15px;
     font-weight: 500;
-    border-radius: 10px;  /* уменьшенное скругление */
+    border-radius: 10px;
     text-align: center;
     cursor: pointer;
     transition: 0.2s;
@@ -150,23 +158,23 @@ h3{
     min-width: 0;
 }
 
-/* кнопка ВЕРНУТЬ - синий цвет (как основной акцент) */
+/* кнопка ВЕРНУТЬ — цвет #1a2f40 (как и переместить) */
 .close-btn {
-    background: #2563eb;  /* насыщенный синий */
+    background: #1a2f40;
     color: white;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .close-btn:hover {
-    background: #1d4ed8;  /* более тёмный синий при наведении */
+    background: #0f232f;
 }
 
-/* кнопка УДАЛИТЬ - светлая, тоже скругление 10px */
+/* кнопка УДАЛИТЬ - светлая, скругление 10px */
 .secondary-btn {
     background: #f1f5f9;
     color: #1e293b;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;  /* единое скругление */
+    border-radius: 10px;
 }
 
 .secondary-btn:hover {
@@ -182,7 +190,7 @@ h3{
     .action-btn {
         padding: 11px 6px;
         font-size: 14px;
-        border-radius: 10px;  /* сохраняем единое скругление */
+        border-radius: 10px;
     }
     .info-table td {
         padding: 12px 12px;
@@ -266,7 +274,7 @@ h3{
 
 .login-icon i {
     font-size: 28px;
-    color: #1f2937;
+    color: #1a2f40;
 }
 
 .loading-spinner {
@@ -275,7 +283,7 @@ h3{
     height: 40px;
     border: 3px solid #e2e8f0;
     border-radius: 50%;
-    border-top-color: #1e293b;
+    border-top-color: #1a2f40;
     animation: spin 0.8s linear infinite;
 }
 
@@ -351,7 +359,7 @@ h3{
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    background: #1e293b;
+    background: #1a2f40;
     color: white;
     padding: 10px 24px;
     border-radius: 60px;
@@ -359,7 +367,6 @@ h3{
     z-index: 1000;
     animation: slideUp 0.25s ease;
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    backdrop-filter: blur(2px);
 }
 
 @keyframes slideUp {
@@ -451,7 +458,7 @@ function showToast(message, isError = false) {
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message;
-    toast.style.background = isError ? '#dc2626' : '#0f172a';
+    toast.style.background = isError ? '#dc2626' : '#1a2f40';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
@@ -612,7 +619,7 @@ async function delRowAsync(row){
     }
 }
 
-// Рендер с синей кнопкой "Вернуть" и уменьшенным скруглением
+// Рендер: статус "Активно" #dc143c, "Закрыто" #1a2f40, кнопка Вернуть #1a2f40
 function render(transfers){
     const container = document.getElementById('list');
     
@@ -657,6 +664,7 @@ function render(transfers){
             }
         }
         
+        // Цвета статуса: открыт → #dc143c, закрыт → #1a2f40
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
         const statusText = transfer.status === 'open' ? '● Активно' : '✓ Закрыто';
         
@@ -693,7 +701,7 @@ function render(transfers){
         
         div.appendChild(table);
         
-        // Блок действий с кнопками: Вернуть (синий, слева) и Удалить (светлый, справа)
+        // Блок действий с кнопками: Вернуть (цвет #1a2f40, слева) и Удалить (справа)
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
         
@@ -701,6 +709,7 @@ function render(transfers){
             const returnBtn = document.createElement('button');
             returnBtn.textContent = 'Вернуть';
             returnBtn.className = 'action-btn close-btn';
+            returnBtn.style.background = '#1a2f40';   // Явно задаём #1a2f40
             returnBtn.onclick = (e) => {
                 e.stopPropagation();
                 closeTransferAsync(
