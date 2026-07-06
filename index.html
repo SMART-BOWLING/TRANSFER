@@ -17,7 +17,7 @@ body{
     margin:0;
     padding:16px;
     font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    background:#1a2f40;  /* заданный цвет фона */
+    background:#1a2f40;
     color:#111;
     min-height:100vh;
 }
@@ -27,12 +27,76 @@ body{
     margin:auto;
 }
 
+/* ===== ЕДИНАЯ ПОДЛОЖКА ===== */
+.main-card{
+    background:#ffffff;
+    border-radius:4px;
+    padding:20px 16px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    border:1px solid #edf2f7;
+}
+
+/* ===== ПОЛЬЗОВАТЕЛЬСКАЯ ШАПКА ВНУТРИ ПОДЛОЖКИ ===== */
+.user-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding-bottom:16px;
+    border-bottom:1px solid #f0f4f9;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+}
+
+.user-avatar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+#user-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border:1px solid #e2e8f0;
+}
+
+.user-text p {
+    margin: 0;
+    font-size:14px;
+}
+#user-name {
+    font-weight:600;
+    color:#0f172a;
+}
+#user-email {
+    color:#64748b;
+    font-size:12px;
+}
+
+#logout-btn {
+    background: #f1f5f9;
+    color: #1e293b;
+    padding: 6px 16px;
+    border-radius:4px;
+    font-size:13px;
+    border:1px solid #e2e8f0;
+    cursor:pointer;
+    width:auto;
+    margin:0;
+}
+#logout-btn:hover {
+    background: #e2e8f0;
+}
+
+/* ===== ФОРМА ===== */
 input,select,button{
     width:100%;
     padding:12px;
     margin-bottom:10px;
     border:1px solid #e2e8f0;
-    border-radius:4px;   /* минимальное закругление */
+    border-radius:4px;
     font-size:15px;
     background:#fff;
     transition: all 0.2s ease;
@@ -44,29 +108,18 @@ input:focus, select:focus{
     box-shadow:0 0 0 2px rgba(148,163,184,0.1);
 }
 
-/* Основная кнопка ПЕРЕМЕСТИТЬ ДЕТАЛЬ – цвет #1a2f40 */
 #moveBtn {
     background: #1a2f40;
     color: white;
     border: none;
     border-radius:4px;
+    font-weight:500;
+    cursor:pointer;
 }
-
 #moveBtn:hover {
     background: #0f232f;
 }
-
-button{
-    background:#1e293b;
-    color:#fff;
-    border:none;
-    font-weight:500;
-    cursor:pointer;
-    transition: all 0.2s;
-    border-radius:4px;
-}
-
-button:disabled{
+#moveBtn:disabled{
     opacity:0.5;
     cursor:not-allowed;
 }
@@ -75,18 +128,16 @@ h3{
     margin:24px 0 16px;
     font-size:18px;
     font-weight:500;
-    letter-spacing:-0.2px;
     color:#0f172a;
 }
 
-/* ========== КАРТОЧКА: заголовок слева / значение справа ========== */
+/* ========== КАРТОЧКИ ИСТОРИИ ========== */
 .card{
     background:#ffffff;
     border:1px solid #edf2f7;
-    border-radius:4px;   /* минимальное закругление */
+    border-radius:4px;
     padding:0;
     margin-bottom:12px;
-    transition: all 0.15s;
     box-shadow:0 1px 2px rgba(0,0,0,0.02);
 }
 
@@ -94,29 +145,23 @@ h3{
     width:100%;
     border-collapse: collapse;
 }
-
 .info-table tr{
     border-bottom:1px solid #f1f5f9;
 }
-
 .info-table tr:last-child{
     border-bottom:none;
 }
-
 .info-table td{
     padding:14px 16px;
     font-size:14px;
     vertical-align:top;
 }
-
 .info-table td:first-child{
     font-weight:500;
     color:#334155;
     width:38%;
-    letter-spacing:-0.2px;
     background-color:#fdfdfd;
 }
-
 .info-table td:last-child{
     color:#0f172a;
     font-weight:470;
@@ -124,19 +169,16 @@ h3{
     word-break:break-word;
 }
 
-/* СТАТУС: Активно -> #dc143c (малиново-красный), Закрыто -> #1a2f40 (тёмный графит) */
 .status-open{
     color: #dc143c;
     font-weight:600;
-    display:inline-block;
 }
-
 .status-closed{
     color: #1a2f40;
     font-weight:600;
 }
 
-/* ========== КНОПКИ ДЕЙСТВИЙ: слева и справа на телефоне ========== */
+/* ========== КНОПКИ ДЕЙСТВИЙ ========== */
 .actions{
     display:flex;
     gap:12px;
@@ -147,72 +189,48 @@ h3{
     align-items: center;
 }
 
-/* общий стиль для обеих кнопок действий - скругление 4px */
 .action-btn {
-    flex: 1;
-    width: auto;
-    padding: 12px 8px;
-    font-size: 15px;
-    font-weight: 500;
-    border-radius: 4px;
-    text-align: center;
-    cursor: pointer;
-    transition: 0.2s;
-    border: none;
-    min-width: 0;
+    flex:1;
+    width:auto;
+    padding:12px 8px;
+    font-size:15px;
+    font-weight:500;
+    border-radius:4px;
+    cursor:pointer;
+    transition:0.2s;
+    border:none;
+    min-width:0;
+    text-align:center;
 }
 
-/* кнопка ВЕРНУТЬ — цвет #1a2f40 (как и переместить) */
 .close-btn {
     background: #1a2f40;
     color: white;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     border-radius:4px;
 }
-
 .close-btn:hover {
     background: #0f232f;
 }
 
-/* кнопка УДАЛИТЬ - светлая, скругление 4px */
 .secondary-btn {
     background: #f1f5f9;
     color: #1e293b;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
+    border:1px solid #e2e8f0;
+    border-radius:4px;
 }
-
 .secondary-btn:hover {
     background: #e2e8f0;
 }
 
-/* Адаптация под маленькие экраны */
-@media (max-width: 480px) {
-    .actions {
-        padding: 12px 14px 16px 14px;
-        gap: 10px;
-    }
-    .action-btn {
-        padding: 11px 6px;
-        font-size: 14px;
-        border-radius: 4px;
-    }
-    .info-table td {
-        padding: 12px 12px;
-    }
+@media (max-width:480px){
+    .actions{padding:12px 14px 16px;gap:10px;}
+    .action-btn{padding:11px 6px;font-size:14px;border-radius:4px;}
+    .info-table td{padding:12px 12px;}
+    .main-card{padding:16px 12px;}
 }
-
-/* на десктопе чуть шире */
-@media (min-width: 600px) {
-    .actions {
-        justify-content: space-between;
-    }
-    .action-btn {
-        flex: 0 1 auto;
-        min-width: 110px;
-        padding: 10px 20px;
-        border-radius: 4px;
-    }
+@media (min-width:600px){
+    .actions{justify-content:space-between;}
+    .action-btn{flex:0 1 auto;min-width:110px;padding:10px 20px;border-radius:4px;}
 }
 
 .loading{
@@ -223,7 +241,6 @@ h3{
     border-radius:4px;
     border:1px solid #edf2f7;
 }
-
 .empty{
     text-align:center;
     color:#94a3b8;
@@ -240,150 +257,46 @@ h3{
     align-items: center;
     min-height: 400px;
 }
-
 #login-container {
     background: white;
     padding: 40px 30px;
     border-radius:4px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.05);
-    text-align: center;
-    max-width: 400px;
-    width: 100%;
+    box-shadow:0 8px 20px rgba(0,0,0,0.03);
+    text-align:center;
+    max-width:400px;
+    width:100%;
     border:1px solid #edf2f7;
 }
-
-#login-container h2 {
-    color: #0f172a;
-    margin: 15px 0 5px;
-    font-size: 26px;
-    font-weight:500;
-}
-
-.login-subtitle {
-    color: #64748b;
-    font-size: 14px;
-    margin-bottom: 28px;
-}
-
-.login-icon {
-    width: 64px;
-    height: 64px;
-    background: #f8fafc;
-    border-radius:4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    border:1px solid #eef2ff;
-}
-
-.login-icon i {
-    font-size: 28px;
-    color: #1a2f40;
-}
+#login-container h2{color:#0f172a;margin:15px 0 5px;font-size:26px;font-weight:500;}
+.login-subtitle{color:#64748b;font-size:14px;margin-bottom:28px;}
+.login-icon{width:64px;height:64px;background:#f8fafc;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;border:1px solid #eef2ff;}
+.login-icon i{font-size:28px;color:#1a2f40;}
 
 .loading-spinner {
     display: inline-block;
-    width: 40px;
-    height: 40px;
-    border: 3px solid #e2e8f0;
-    border-radius: 50%;
-    border-top-color: #1a2f40;
-    animation: spin 0.8s linear infinite;
+    width:40px;height:40px;
+    border:3px solid #e2e8f0;
+    border-radius:50%;
+    border-top-color:#1a2f40;
+    animation:spin 0.8s linear infinite;
 }
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-#user-info {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    background: #ffffff;
-    padding: 12px 20px;
-    border-radius:4px;
-    margin-bottom: 24px;
-    gap: 15px;
-    flex-wrap: wrap;
-    border:1px solid #edf2f7;
-    box-shadow:0 1px 2px rgba(0,0,0,0.02);
-}
-
-.user-details {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-}
-
-#user-pic {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border:1px solid #e2e8f0;
-}
-
-.user-text p {
-    margin: 0;
-    font-size: 14px;
-}
-
-#user-name {
-    font-weight: 600;
-    color: #0f172a;
-}
-
-#user-email {
-    color: #64748b;
-    font-size: 12px;
-}
-
-#logout-btn {
-    width: auto;
-    background: #f1f5f9;
-    color: #1e293b;
-    padding: 8px 18px;
-    margin: 0;
-    border-radius:4px;
-    font-size:13px;
-}
-
-#logout-btn:hover {
-    background: #e2e8f0;
-}
-
-#main-content {
-    display: none;
-}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 
 .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1a2f40;
-    color: white;
-    padding: 10px 24px;
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#1a2f40;
+    color:white;
+    padding:10px 24px;
     border-radius:4px;
-    font-size: 14px;
-    z-index: 1000;
-    animation: slideUp 0.25s ease;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    font-size:14px;
+    z-index:1000;
+    animation:slideUp 0.25s ease;
+    box-shadow:0 8px 16px rgba(0,0,0,0.1);
 }
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(12px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
 </head>
 
@@ -392,9 +305,7 @@ h3{
 <div class="wrapper">
     <div id="login-section">
         <div id="login-container">
-            <div class="login-icon">
-                <i class="fas fa-exchange-alt"></i>
-            </div>
+            <div class="login-icon"><i class="fas fa-exchange-alt"></i></div>
             <h2>TRANSFER</h2>
             <div class="login-subtitle">Учёт перемещения деталей</div>
             <div id="g_id_onload" 
@@ -414,46 +325,53 @@ h3{
         </div>
     </div>
 
-    <div id="user-info">
-        <div class="user-details">
-            <img id="user-pic" src="" alt="Profile">
-            <div class="user-text">
-                <p id="user-name"></p>
-                <p id="user-email"></p>
-            </div>
-        </div>
-        <button id="logout-btn" onclick="signOut()">Выйти</button>
-    </div>
+    <!-- ЕДИНАЯ ПОДЛОЖКА -->
+    <div id="main-content" style="display:none;">
+        <div class="main-card">
 
-    <div id="main-content">
-        <input id="partNumber" placeholder="Номер детали" autocomplete="off">
-        <input id="quantity" type="number" placeholder="Количество" min="1" value="1">
-        <select id="from">
-            <option>BLOCKBUSTER</option>
-            <option>SKYMALL</option>
-            <option>LUCKY STRIKE KH</option>
-        </select>
-        <select id="to">
-            <option>BLOCKBUSTER</option>
-            <option>SKYMALL</option>
-            <option>LUCKY STRIKE KH</option>
-        </select>
-        <button id="moveBtn" onclick="moveAsync()">Переместить деталь</button>
-        <h3>История перемещений</h3>
-        <div id="list"></div>
+            <!-- Шапка с пользователем -->
+            <div class="user-bar" id="user-info" style="display:none;">
+                <div class="user-avatar">
+                    <img id="user-pic" src="" alt="Profile">
+                    <div class="user-text">
+                        <p id="user-name"></p>
+                        <p id="user-email"></p>
+                    </div>
+                </div>
+                <button id="logout-btn" onclick="signOut()">Выйти</button>
+            </div>
+
+            <!-- Форма перемещения -->
+            <input id="partNumber" placeholder="Номер детали" autocomplete="off">
+            <input id="quantity" type="number" placeholder="Количество" min="1" value="1">
+            <select id="from">
+                <option>BLOCKBUSTER</option>
+                <option>SKYMALL</option>
+                <option>LUCKY STRIKE KH</option>
+            </select>
+            <select id="to">
+                <option>BLOCKBUSTER</option>
+                <option>SKYMALL</option>
+                <option>LUCKY STRIKE KH</option>
+            </select>
+            <button id="moveBtn" onclick="moveAsync()">Переместить деталь</button>
+
+            <!-- История -->
+            <h3>История перемещений</h3>
+            <div id="list"></div>
+
+        </div>
     </div>
 </div>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
-// ============ КОНФИГУРАЦИЯ АВТОРИЗАЦИИ ============
+// ============ КОНФИГУРАЦИЯ ============
 const AUTH_SPREADSHEET_ID = '1-yiVdZYa6wJdupTiuiHvI_ht3Vu73RUjyCehZqs2cJ4';
 const AUTH_SHEET_NAME = '1';
 const AUTH_API_KEY = 'AIzaSyAXL0Hsfxy-g-AgYhnivj4x9gCB2rrtF-0';
 const CURRENT_SITE = window.location.href.split('?')[0];
-
-// ============ КОНФИГУРАЦИЯ УЧЁТА ДЕТАЛЕЙ ============
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybiMKIdGvGX8WpiNEQgucpi91R7tCzZnVD-Z6T9iF343qzwHSg4JVL0w9JJIug8Hpy/exec';
 
 let currentUser = null;
@@ -471,36 +389,21 @@ function showToast(message, isError = false) {
 function callScriptAsync(functionName, data = null) {
     return new Promise((resolve, reject) => {
         const callbackName = 'callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        
         window[callbackName] = function(response) {
             delete window[callbackName];
-            if (response && response.error) {
-                reject(new Error(response.error));
-            } else {
-                resolve(response && response.result ? response.result : response);
-            }
+            if (response && response.error) reject(new Error(response.error));
+            else resolve(response && response.result ? response.result : response);
         };
-        
         const params = new URLSearchParams();
         params.append('fn', functionName);
-        if (data !== null) {
-            params.append('data', JSON.stringify(data));
-        }
+        if (data !== null) params.append('data', JSON.stringify(data));
         params.append('callback', callbackName);
-        
         const script = document.createElement('script');
         script.src = `${SCRIPT_URL}?${params.toString()}`;
-        script.onerror = () => {
-            delete window[callbackName];
-            reject(new Error('Network error'));
-        };
+        script.onerror = () => { delete window[callbackName]; reject(new Error('Network error')); };
         document.body.appendChild(script);
-        
         setTimeout(() => {
-            if (window[callbackName]) {
-                delete window[callbackName];
-                reject(new Error('Request timeout'));
-            }
+            if (window[callbackName]) { delete window[callbackName]; reject(new Error('Request timeout')); }
         }, 30000);
     });
 }
@@ -508,14 +411,10 @@ function callScriptAsync(functionName, data = null) {
 async function loadAsync(){
     const container = document.getElementById('list');
     container.innerHTML = '<div class="loading"><div class="loading-spinner" style="width:30px;height:30px;"></div><br>Загрузка...</div>';
-    
     try {
         const transfers = await callScriptAsync('getTransfers');
-        if (Array.isArray(transfers)) {
-            render(transfers);
-        } else {
-            throw new Error('Неверный формат данных');
-        }
+        if (Array.isArray(transfers)) render(transfers);
+        else throw new Error('Неверный формат данных');
     } catch(error) {
         console.error('Load error:', error);
         container.innerHTML = '<div class="empty">Ошибка загрузки: ' + escapeHtml(error.message) + '</div>';
@@ -526,32 +425,16 @@ async function moveAsync(){
     const partNumberInput = document.getElementById('partNumber');
     const quantityInput = document.getElementById('quantity');
     const moveBtn = document.getElementById('moveBtn');
-    
     const partNumber = partNumberInput.value.trim();
     const quantityVal = quantityInput.value.trim();
-    
-    if(!partNumber){
-        showToast('Введите номер детали', true);
-        return;
-    }
-    
-    if(!quantityVal || parseInt(quantityVal) <= 0){
-        showToast('Введите корректное количество (больше 0)', true);
-        return;
-    }
-    
-    if(document.getElementById('from').value === document.getElementById('to').value){
-        showToast('Нельзя перемещать деталь в тот же склад', true);
-        return;
-    }
-
+    if(!partNumber){ showToast('Введите номер детали', true); return; }
+    if(!quantityVal || parseInt(quantityVal) <= 0){ showToast('Введите корректное количество (больше 0)', true); return; }
+    if(document.getElementById('from').value === document.getElementById('to').value){ showToast('Нельзя перемещать деталь в тот же склад', true); return; }
     const fromSelect = document.getElementById('from');
     const toSelect = document.getElementById('to');
-    
     const originalText = moveBtn.innerHTML;
     moveBtn.innerHTML = 'Перемещение...';
     moveBtn.disabled = true;
-
     try {
         await callScriptAsync('transferPart', {
             partNumber: partNumber,
@@ -560,10 +443,8 @@ async function moveAsync(){
             to: toSelect.value,
             type: 'move'
         });
-        
         partNumberInput.value = '';
         quantityInput.value = '1';
-        
         await loadAsync();
         showToast('✅ Деталь успешно перемещена!');
     } catch(error) {
@@ -574,26 +455,12 @@ async function moveAsync(){
     }
 }
 
-// ОБНОВЛЕННАЯ ФУНКЦИЯ ВОЗВРАТА
 async function closeTransferAsync(row, partNumber, from, to, maxQuantity){
     let returnQuantity = prompt(`Сколько деталей "${partNumber}" вернуть обратно в ${from}?\n(Доступно для возврата: ${maxQuantity})`, maxQuantity);
-    
-    if (returnQuantity === null) {
-        return;
-    }
-    
+    if (returnQuantity === null) return;
     returnQuantity = parseInt(returnQuantity);
-    
-    if (isNaN(returnQuantity) || returnQuantity <= 0) {
-        showToast('Введите корректное количество (больше 0)', true);
-        return;
-    }
-    
-    if (returnQuantity > maxQuantity) {
-        showToast(`Нельзя вернуть больше ${maxQuantity} шт.`, true);
-        return;
-    }
-    
+    if (isNaN(returnQuantity) || returnQuantity <= 0){ showToast('Введите корректное количество (больше 0)', true); return; }
+    if (returnQuantity > maxQuantity){ showToast(`Нельзя вернуть больше ${maxQuantity} шт.`, true); return; }
     try {
         await callScriptAsync('returnPart', {
             partNumber: partNumber,
@@ -602,7 +469,6 @@ async function closeTransferAsync(row, partNumber, from, to, maxQuantity){
             to: to,
             transferRow: row
         });
-        
         await loadAsync();
         showToast(`✅ Возвращено ${returnQuantity} шт. из ${to} в ${from}`);
     } catch(error) {
@@ -622,57 +488,30 @@ async function delRowAsync(row){
     }
 }
 
-// Рендер: статус "Активно" #dc143c, "Закрыто" #1a2f40, кнопка Вернуть #1a2f40
 function render(transfers){
     const container = document.getElementById('list');
-    
-    if(!transfers || transfers.length === 0){
-        container.innerHTML = '<div class="empty">📭 Нет перемещений</div>';
-        return;
-    }
-
+    if(!transfers || transfers.length === 0){ container.innerHTML = '<div class="empty">📭 Нет перемещений</div>'; return; }
     container.innerHTML = '';
-    
     const sorted = [...transfers].sort((a,b) => {
         if(a.status === 'open' && b.status === 'closed') return -1;
         if(a.status === 'closed' && b.status === 'open') return 1;
         return new Date(b.timestamp) - new Date(a.timestamp);
     });
-    
     sorted.forEach(transfer => {
         const div = document.createElement('div');
         div.className = 'card';
-
         let dateStr = 'Дата не указана';
         if (transfer.timestamp) {
-            try {
-                const date = new Date(transfer.timestamp);
-                if (!isNaN(date.getTime())) {
-                    dateStr = date.toLocaleString('ru-RU');
-                }
-            } catch(e) {
-                dateStr = transfer.timestamp;
-            }
+            try { const date = new Date(transfer.timestamp); if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ru-RU'); } catch(e) { dateStr = transfer.timestamp; }
         }
-        
         let closedInfoStr = '';
         if(transfer.closedAt && transfer.closedAt !== ''){
-            try {
-                const closedDate = new Date(transfer.closedAt);
-                if (!isNaN(closedDate.getTime())) {
-                    closedInfoStr = closedDate.toLocaleString('ru-RU');
-                }
-            } catch(e) {
-                closedInfoStr = transfer.closedAt;
-            }
+            try { const closedDate = new Date(transfer.closedAt); if (!isNaN(closedDate.getTime())) closedInfoStr = closedDate.toLocaleString('ru-RU'); } catch(e) { closedInfoStr = transfer.closedAt; }
         }
-        
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
         const statusText = transfer.status === 'open' ? '● Задолженность' : '✓ Закрыто';
-        
         const table = document.createElement('table');
         table.className = 'info-table';
-        
         const rowsData = [
             { label: 'Номер детали', value: transfer.partNumber || '—' },
             { label: 'Количество', value: `${transfer.quantity} шт.` },
@@ -681,57 +520,35 @@ function render(transfers){
             { label: 'Куда', value: transfer.to || '—' },
             { label: 'Статус', value: `<span class="${statusClass}">${statusText}</span>` }
         ];
-        
-        if (closedInfoStr) {
-            rowsData.push({ label: 'Дата закрытия', value: closedInfoStr });
-        }
-        
+        if (closedInfoStr) rowsData.push({ label: 'Дата закрытия', value: closedInfoStr });
         rowsData.forEach(rowItem => {
             const tr = document.createElement('tr');
             const tdLabel = document.createElement('td');
             tdLabel.textContent = rowItem.label;
             const tdValue = document.createElement('td');
-            if (rowItem.label === 'Статус') {
-                tdValue.innerHTML = rowItem.value;
-            } else {
-                tdValue.textContent = rowItem.value;
-            }
+            if (rowItem.label === 'Статус') tdValue.innerHTML = rowItem.value;
+            else tdValue.textContent = rowItem.value;
             tr.appendChild(tdLabel);
             tr.appendChild(tdValue);
             table.appendChild(tr);
         });
-        
         div.appendChild(table);
-        
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
-        
         if (transfer.status === 'open') {
             const returnBtn = document.createElement('button');
             returnBtn.textContent = 'Вернуть';
             returnBtn.className = 'action-btn close-btn';
-            returnBtn.style.background = '#1a2f40';
             returnBtn.onclick = (e) => {
                 e.stopPropagation();
-                closeTransferAsync(
-                    transfer.row,
-                    transfer.partNumber || '',
-                    transfer.from || '',
-                    transfer.to || '',
-                    transfer.quantity
-                );
+                closeTransferAsync(transfer.row, transfer.partNumber || '', transfer.from || '', transfer.to || '', transfer.quantity);
             };
             actionsDiv.appendChild(returnBtn);
         }
-        
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Удалить';
         deleteBtn.className = 'action-btn secondary-btn';
-        deleteBtn.onclick = (e) => {
-            e.stopPropagation();
-            delRowAsync(transfer.row);
-        };
-        
+        deleteBtn.onclick = (e) => { e.stopPropagation(); delRowAsync(transfer.row); };
         if (transfer.status !== 'open') {
             deleteBtn.style.marginLeft = 'auto';
             deleteBtn.style.flex = '0 0 auto';
@@ -739,24 +556,12 @@ function render(transfers){
         } else {
             actionsDiv.appendChild(deleteBtn);
         }
-        
         div.appendChild(actionsDiv);
         container.appendChild(div);
     });
 }
 
-function escapeHtml(str){
-    if (str === null || str === undefined) return '';
-    if (typeof str !== 'string') str = String(str);
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-// ============ Функции авторизации ============
+function escapeHtml(str){ if (str === null || str === undefined) return ''; if (typeof str !== 'string') str = String(str); return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function loadSheetsAPI() {
     return new Promise((resolve, reject) => {
@@ -772,16 +577,9 @@ function loadSheetsAPI() {
 function handleCredentialResponse(response) {
     try {
         const payload = parseJwt(response.credential);
-        
-        currentUser = {
-            email: payload.email.toLowerCase().trim(),
-            name: payload.name,
-            picture: payload.picture
-        };
-        
+        currentUser = { email: payload.email.toLowerCase().trim(), name: payload.name, picture: payload.picture };
         showLoadingAuth(true);
         initAndCheckEmail();
-        
     } catch (e) {
         console.error('Ошибка аутентификации:', e);
         showLoadingAuth(false);
@@ -792,22 +590,13 @@ function handleCredentialResponse(response) {
 function showLoadingAuth(show) {
     const container = document.getElementById('login-container');
     if (show) {
-        if (!container.hasAttribute('data-original')) {
-            container.setAttribute('data-original', container.innerHTML);
-        }
+        if (!container.hasAttribute('data-original')) container.setAttribute('data-original', container.innerHTML);
         container.innerHTML = '<div style="padding:40px;text-align:center;"><div class="loading-spinner"></div><br><span style="color:#64748b;">Проверка доступа...</span></div>';
     } else {
         if (container.getAttribute('data-original') && document.getElementById('login-section').style.display !== 'none') {
             container.innerHTML = container.getAttribute('data-original');
             if (window.google && google.accounts && google.accounts.id) {
-                google.accounts.id.renderButton(document.querySelector('.g_id_signin'), {
-                    type: 'standard',
-                    shape: 'pill',
-                    theme: 'outline',
-                    text: 'signin_with',
-                    size: 'large',
-                    logo_alignment: 'left'
-                });
+                google.accounts.id.renderButton(document.querySelector('.g_id_signin'), { type:'standard', shape:'pill', theme:'outline', text:'signin_with', size:'large', logo_alignment:'left' });
             }
         }
     }
@@ -816,13 +605,8 @@ function showLoadingAuth(show) {
 async function initAndCheckEmail() {
     try {
         await loadSheetsAPI();
-        await gapi.client.init({
-            apiKey: AUTH_API_KEY,
-            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-        });
-        
+        await gapi.client.init({ apiKey: AUTH_API_KEY, discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
         await checkEmailAndSiteInSheet(currentUser.email);
-        
     } catch (error) {
         console.error('Ошибка инициализации:', error);
         showLoadingAuth(false);
@@ -832,40 +616,22 @@ async function initAndCheckEmail() {
 
 async function checkEmailAndSiteInSheet(email) {
     try {
-        const response = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: AUTH_SPREADSHEET_ID,
-            range: `${AUTH_SHEET_NAME}!A:Z`,
-        });
-        
+        const response = await gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: AUTH_SPREADSHEET_ID, range: `${AUTH_SHEET_NAME}!A:Z` });
         const rows = response.result.values;
-        if (!rows || rows.length === 0) {
-            showLoadingAuth(false);
-            alert('Таблица пуста');
-            return;
-        }
-        
-        let hasAccess = false;
-        let foundName = null;
-        
+        if (!rows || rows.length === 0) { showLoadingAuth(false); alert('Таблица пуста'); return; }
+        let hasAccess = false, foundName = null;
         for (let i = 0; i < rows.length; i++) {
             if (!rows[i][0]) continue;
-            
             const rowEmail = rows[i][0].toLowerCase().trim();
             if (rowEmail === email) {
                 for (let j = 1; j < rows[i].length; j++) {
                     const site = rows[i][j]?.trim().split('?')[0];
-                    if (site === CURRENT_SITE || site?.includes('TRANSFER')) {
-                        hasAccess = true;
-                        break;
-                    }
+                    if (site === CURRENT_SITE || site?.includes('TRANSFER')) { hasAccess = true; break; }
                 }
-                if (rows[i][1]) {
-                    foundName = rows[i][1].trim();
-                }
+                if (rows[i][1]) foundName = rows[i][1].trim();
                 break;
             }
         }
-        
         if (hasAccess) {
             currentUserNameFromSheet = foundName || currentUser.name;
             loginUser(currentUser);
@@ -873,7 +639,6 @@ async function checkEmailAndSiteInSheet(email) {
             showLoadingAuth(false);
             alert('Доступ запрещен: Ваш email не найден в таблице или у вас нет доступа к этому сайту');
         }
-        
     } catch (error) {
         console.error('Ошибка доступа к таблице:', error);
         showLoadingAuth(false);
@@ -883,46 +648,34 @@ async function checkEmailAndSiteInSheet(email) {
 
 function loginUser(payload) {
     document.getElementById('login-section').style.display = 'none';
-    document.getElementById('user-info').style.display = 'flex';
     document.getElementById('main-content').style.display = 'block';
-    
+    const userInfo = document.getElementById('user-info');
+    userInfo.style.display = 'flex';
     document.getElementById('user-pic').src = payload.picture;
     document.getElementById('user-name').textContent = currentUserNameFromSheet || payload.name;
     document.getElementById('user-email').textContent = payload.email;
-    
     localStorage.setItem('userLoggedIn', 'true');
     localStorage.setItem('userEmail', payload.email.toLowerCase());
     localStorage.setItem('userName', payload.name);
     localStorage.setItem('userNameFromSheet', currentUserNameFromSheet || payload.name);
     localStorage.setItem('userPic', payload.picture);
-    
     showLoadingAuth(false);
-    
     loadAsync();
 }
 
 function parseJwt(token) {
     try {
         const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const base64 = base64Url.replace(/-/g,'+').replace(/_/g,'/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         return JSON.parse(jsonPayload);
-    } catch (e) {
-        console.error('Ошибка парсинга JWT:', e);
-        return {};
-    }
+    } catch(e) { console.error('Ошибка парсинга JWT:', e); return {}; }
 }
 
 function signOut() {
     localStorage.clear();
     sessionStorage.clear();
-    
-    if (google && google.accounts && google.accounts.id) {
-        google.accounts.id.disableAutoSelect();
-    }
-    
+    if (google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
     location.reload();
 }
 
@@ -938,52 +691,29 @@ window.addEventListener('load', function() {
     const name = localStorage.getItem('userName');
     const nameSheet = localStorage.getItem('userNameFromSheet');
     const pic = localStorage.getItem('userPic');
-    
     if (isLoggedIn && email) {
         document.getElementById('login-section').style.display = 'none';
-        document.getElementById('user-info').style.display = 'flex';
         document.getElementById('main-content').style.display = 'block';
-        
+        const userInfo = document.getElementById('user-info');
+        userInfo.style.display = 'flex';
         document.getElementById('user-name').textContent = nameSheet || name || 'User';
         document.getElementById('user-email').textContent = email;
         if (pic) document.getElementById('user-pic').src = pic;
-        
-        currentUser = {
-            email: email,
-            name: name,
-            picture: pic
-        };
+        currentUser = { email: email, name: name, picture: pic };
         currentUserNameFromSheet = nameSheet || name;
-        
         loadSheetsAPI()
-            .then(() => gapi.client.init({
-                apiKey: AUTH_API_KEY,
-                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-            }))
+            .then(() => gapi.client.init({ apiKey: AUTH_API_KEY, discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'] }))
             .then(() => checkEmailAndSiteInSheet(email))
             .then(() => loadAsync())
             .catch(() => signOut());
     } else {
         document.getElementById('login-section').style.display = 'flex';
-        document.getElementById('user-info').style.display = 'none';
         document.getElementById('main-content').style.display = 'none';
-        
         if (google && google.accounts && google.accounts.id) {
-            google.accounts.id.initialize({
-                client_id: '328749588235-bgfeukqogpoq2ha65j7j0vk840hctiaq.apps.googleusercontent.com',
-                callback: handleCredentialResponse
-            });
-            
+            google.accounts.id.initialize({ client_id: '328749588235-bgfeukqogpoq2ha65j7j0vk840hctiaq.apps.googleusercontent.com', callback: handleCredentialResponse });
             const signinDiv = document.querySelector('.g_id_signin');
             if (signinDiv) {
-                google.accounts.id.renderButton(signinDiv, { 
-                    type: 'standard', 
-                    shape: 'pill', 
-                    theme: 'outline', 
-                    text: 'signin_with', 
-                    size: 'large',
-                    logo_alignment: 'left'
-                });
+                google.accounts.id.renderButton(signinDiv, { type:'standard', shape:'pill', theme:'outline', text:'signin_with', size:'large', logo_alignment:'left' });
             }
         }
     }
