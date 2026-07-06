@@ -6,6 +6,7 @@
 <title>Учёт деталей - TRANSFER</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
 *{
@@ -125,6 +126,77 @@ input:focus, select:focus{
     cursor:not-allowed;
 }
 
+/* ===== ФИЛЬТРЫ И ПОИСК (стили из примера) ===== */
+.filter-search-container {
+    display: block;
+    margin-bottom:16px;
+}
+
+.filter-section {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.filter-group {
+    flex: 1;
+    min-width: 140px;
+}
+.filter-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #fff;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+    margin-bottom:0;
+}
+.filter-group select:focus {
+    outline: none;
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 2px rgba(148,163,184,0.1);
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+.search-box {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    font-size: 15px;
+    background: #fff;
+    margin-bottom:0;
+}
+.search-box:focus {
+    outline: none;
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 2px rgba(148,163,184,0.1);
+}
+.clear-search-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 4px;
+    background: #dc143c;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-bottom:0;
+}
+.clear-search-btn:hover {
+    background: #b01030;
+}
+
 h3{
     margin:0 0 16px 0;
     font-size:18px;
@@ -132,7 +204,7 @@ h3{
     color:#0f172a;
 }
 
-/* ========== КАРТОЧКИ ИСТОРИИ — КАЖДАЯ СО СВОЕЙ ПОДЛОЖКОЙ ========== */
+/* ========== КАРТОЧКИ ИСТОРИИ ========== */
 .history-list{
     display:flex;
     flex-direction:column;
@@ -233,6 +305,7 @@ h3{
     .action-btn{padding:11px 6px;font-size:14px;border-radius:4px;}
     .info-table td{padding:12px 12px;}
     .main-card{padding:16px 12px;}
+    .filter-section{flex-direction:column;}
 }
 @media (min-width:600px){
     .actions{justify-content:space-between;}
@@ -366,14 +439,34 @@ h3{
 
         </div>
 
+        <!-- БЛОК ФИЛЬТРОВ И ПОИСКА -->
+        <div class="filter-search-container">
+            <div class="filter-section">
+                <div class="filter-group">
+                    <select id="statusFilter">
+                        <option value="all">Все статусы</option>
+                        <option value="open">Задолженность</option>
+                        <option value="closed">Закрыто</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <!-- Пустой фильтр для симметрии, можно добавить клубы -->
+                </div>
+            </div>
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" class="search-box" placeholder="Поиск по номеру детали...">
+                <button id="clearSearchBtn" class="clear-search-btn" title="Очистить поле поиска">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
         <!-- ЗАГОЛОВОК И СПИСОК ИСТОРИИ -->
         <h3>История перемещений</h3>
         <div id="list" class="history-list"></div>
 
     </div>
 </div>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
 // ============ КОНФИГУРАЦИЯ ============
@@ -385,6 +478,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybiMKIdGvGX8WpiNEQg
 
 let currentUser = null;
 let currentUserNameFromSheet = null;
+let allTransfers = [];
+let filteredTransfers = [];
 
 function showToast(message, isError = false) {
     const toast = document.createElement('div');
@@ -422,11 +517,49 @@ async function loadAsync(){
     container.innerHTML = '<div class="loading"><div class="loading-spinner" style="width:30px;height:30px;"></div><br>Загрузка...</div>';
     try {
         const transfers = await callScriptAsync('getTransfers');
-        if (Array.isArray(transfers)) render(transfers);
-        else throw new Error('Неверный формат данных');
+        if (Array.isArray(transfers)) {
+            allTransfers = transfers;
+            applyFiltersAndRender();
+        } else {
+            throw new Error('Неверный формат данных');
+        }
     } catch(error) {
         console.error('Load error:', error);
         container.innerHTML = '<div class="empty">Ошибка загрузки: ' + escapeHtml(error.message) + '</div>';
+    }
+}
+
+// ===== ФИЛЬТРАЦИЯ И ПОИСК =====
+function applyFiltersAndRender() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    filteredTransfers = [...allTransfers];
+
+    // Фильтр по статусу
+    if (statusFilter === 'open') {
+        filteredTransfers = filteredTransfers.filter(t => t.status === 'open');
+    } else if (statusFilter === 'closed') {
+        filteredTransfers = filteredTransfers.filter(t => t.status === 'closed');
+    }
+
+    // Поиск по номеру детали
+    if (searchText) {
+        filteredTransfers = filteredTransfers.filter(t => 
+            (t.partNumber || '').toLowerCase().includes(searchText)
+        );
+    }
+
+    render(filteredTransfers);
+}
+
+function clearSearchField() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.value = '';
+        applyFiltersAndRender();
+        searchInput.focus();
+        showToast('Поле поиска очищено');
     }
 }
 
@@ -499,28 +632,39 @@ async function delRowAsync(row){
 
 function render(transfers){
     const container = document.getElementById('list');
-    if(!transfers || transfers.length === 0){ container.innerHTML = '<div class="empty">📭 Нет перемещений</div>'; return; }
+    if(!transfers || transfers.length === 0){
+        container.innerHTML = '<div class="empty">📭 Нет перемещений</div>';
+        return;
+    }
+
     container.innerHTML = '';
+    
     const sorted = [...transfers].sort((a,b) => {
         if(a.status === 'open' && b.status === 'closed') return -1;
         if(a.status === 'closed' && b.status === 'open') return 1;
         return new Date(b.timestamp) - new Date(a.timestamp);
     });
+    
     sorted.forEach(transfer => {
         const div = document.createElement('div');
         div.className = 'card';
+
         let dateStr = 'Дата не указана';
         if (transfer.timestamp) {
             try { const date = new Date(transfer.timestamp); if (!isNaN(date.getTime())) dateStr = date.toLocaleString('ru-RU'); } catch(e) { dateStr = transfer.timestamp; }
         }
+        
         let closedInfoStr = '';
         if(transfer.closedAt && transfer.closedAt !== ''){
             try { const closedDate = new Date(transfer.closedAt); if (!isNaN(closedDate.getTime())) closedInfoStr = closedDate.toLocaleString('ru-RU'); } catch(e) { closedInfoStr = transfer.closedAt; }
         }
+        
         const statusClass = transfer.status === 'open' ? 'status-open' : 'status-closed';
         const statusText = transfer.status === 'open' ? '● Задолженность' : '✓ Закрыто';
+        
         const table = document.createElement('table');
         table.className = 'info-table';
+        
         const rowsData = [
             { label: 'Номер детали', value: transfer.partNumber || '—' },
             { label: 'Количество', value: `${transfer.quantity} шт.` },
@@ -529,21 +673,31 @@ function render(transfers){
             { label: 'Куда', value: transfer.to || '—' },
             { label: 'Статус', value: `<span class="${statusClass}">${statusText}</span>` }
         ];
-        if (closedInfoStr) rowsData.push({ label: 'Дата закрытия', value: closedInfoStr });
+        
+        if (closedInfoStr) {
+            rowsData.push({ label: 'Дата закрытия', value: closedInfoStr });
+        }
+        
         rowsData.forEach(rowItem => {
             const tr = document.createElement('tr');
             const tdLabel = document.createElement('td');
             tdLabel.textContent = rowItem.label;
             const tdValue = document.createElement('td');
-            if (rowItem.label === 'Статус') tdValue.innerHTML = rowItem.value;
-            else tdValue.textContent = rowItem.value;
+            if (rowItem.label === 'Статус') {
+                tdValue.innerHTML = rowItem.value;
+            } else {
+                tdValue.textContent = rowItem.value;
+            }
             tr.appendChild(tdLabel);
             tr.appendChild(tdValue);
             table.appendChild(tr);
         });
+        
         div.appendChild(table);
+        
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
+        
         if (transfer.status === 'open') {
             const returnBtn = document.createElement('button');
             returnBtn.textContent = 'Вернуть';
@@ -554,10 +708,12 @@ function render(transfers){
             };
             actionsDiv.appendChild(returnBtn);
         }
+        
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Удалить';
         deleteBtn.className = 'action-btn secondary-btn';
         deleteBtn.onclick = (e) => { e.stopPropagation(); delRowAsync(transfer.row); };
+        
         if (transfer.status !== 'open') {
             deleteBtn.style.marginLeft = 'auto';
             deleteBtn.style.flex = '0 0 auto';
@@ -565,12 +721,15 @@ function render(transfers){
         } else {
             actionsDiv.appendChild(deleteBtn);
         }
+        
         div.appendChild(actionsDiv);
         container.appendChild(div);
     });
 }
 
 function escapeHtml(str){ if (str === null || str === undefined) return ''; if (typeof str !== 'string') str = String(str); return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+// ============ Функции авторизации ============
 
 function loadSheetsAPI() {
     return new Promise((resolve, reject) => {
@@ -693,6 +852,8 @@ window.closeTransferAsync = closeTransferAsync;
 window.delRowAsync = delRowAsync;
 window.signOut = signOut;
 window.handleCredentialResponse = handleCredentialResponse;
+window.applyFiltersAndRender = applyFiltersAndRender;
+window.clearSearchField = clearSearchField;
 
 window.addEventListener('load', function() {
     const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
@@ -700,6 +861,12 @@ window.addEventListener('load', function() {
     const name = localStorage.getItem('userName');
     const nameSheet = localStorage.getItem('userNameFromSheet');
     const pic = localStorage.getItem('userPic');
+    
+    // Навешиваем обработчики фильтров
+    document.getElementById('statusFilter').addEventListener('change', applyFiltersAndRender);
+    document.getElementById('searchInput').addEventListener('keyup', applyFiltersAndRender);
+    document.getElementById('clearSearchBtn').addEventListener('click', clearSearchField);
+    
     if (isLoggedIn && email) {
         document.getElementById('login-section').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
