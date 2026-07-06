@@ -27,13 +27,14 @@ body{
     margin:auto;
 }
 
-/* ===== ЕДИНАЯ ПОДЛОЖКА ===== */
+/* ===== ЕДИНАЯ ПОДЛОЖКА ДЛЯ ФОРМЫ ===== */
 .main-card{
     background:#ffffff;
     border-radius:4px;
     padding:20px 16px;
     box-shadow:0 4px 12px rgba(0,0,0,0.08);
     border:1px solid #edf2f7;
+    margin-bottom:16px;
 }
 
 /* ===== ПОЛЬЗОВАТЕЛЬСКАЯ ШАПКА ВНУТРИ ПОДЛОЖКИ ===== */
@@ -125,20 +126,25 @@ input:focus, select:focus{
 }
 
 h3{
-    margin:24px 0 16px;
+    margin:0 0 16px 0;
     font-size:18px;
     font-weight:500;
     color:#0f172a;
 }
 
-/* ========== КАРТОЧКИ ИСТОРИИ ========== */
+/* ========== КАРТОЧКИ ИСТОРИИ — КАЖДАЯ СО СВОЕЙ ПОДЛОЖКОЙ ========== */
+.history-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
 .card{
     background:#ffffff;
     border:1px solid #edf2f7;
     border-radius:4px;
     padding:0;
-    margin-bottom:12px;
-    box-shadow:0 1px 2px rgba(0,0,0,0.02);
+    box-shadow:0 2px 4px rgba(0,0,0,0.04);
 }
 
 .info-table{
@@ -325,8 +331,10 @@ h3{
         </div>
     </div>
 
-    <!-- ЕДИНАЯ ПОДЛОЖКА -->
+    <!-- ОСНОВНОЙ БЛОК -->
     <div id="main-content" style="display:none;">
+
+        <!-- ЕДИНАЯ ПОДЛОЖКА ДЛЯ ФОРМЫ -->
         <div class="main-card">
 
             <!-- Шапка с пользователем -->
@@ -356,11 +364,12 @@ h3{
             </select>
             <button id="moveBtn" onclick="moveAsync()">Переместить деталь</button>
 
-            <!-- История -->
-            <h3>История перемещений</h3>
-            <div id="list"></div>
-
         </div>
+
+        <!-- ЗАГОЛОВОК И СПИСОК ИСТОРИИ -->
+        <h3>История перемещений</h3>
+        <div id="list" class="history-list"></div>
+
     </div>
 </div>
 
