@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>TRANSFER PARTS</title>
+<title>TRANSFER</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -14,7 +14,6 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-    
 body{
     margin:0;
     padding:16px;
@@ -29,7 +28,6 @@ body{
     margin:auto;
 }
 
-/* ===== ЕДИНАЯ ПОДЛОЖКА ДЛЯ ФОРМЫ ===== */
 .main-card{
     background:#ffffff;
     border-radius:4px;
@@ -39,7 +37,6 @@ body{
     margin-bottom:16px;
 }
 
-/* ===== ПОЛЬЗОВАТЕЛЬСКАЯ ШАПКА ВНУТРИ ПОДЛОЖКИ ===== */
 .user-bar{
     display:flex;
     align-items:center;
@@ -93,7 +90,6 @@ body{
     background: #e2e8f0;
 }
 
-/* ===== ФОРМА ===== */
 input,select,button{
     width:100%;
     padding:12px;
@@ -127,7 +123,6 @@ input:focus, select:focus{
     cursor:not-allowed;
 }
 
-/* ===== ФИЛЬТРЫ И ПОИСК (стили из примера) ===== */
 .filter-search-container {
     display: block;
     margin-bottom:16px;
@@ -205,7 +200,6 @@ h3{
     color:#0f172a;
 }
 
-/* ========== КАРТОЧКИ ИСТОРИИ ========== */
 .history-list{
     display:flex;
     flex-direction:column;
@@ -257,7 +251,6 @@ h3{
     font-weight:600;
 }
 
-/* ========== КНОПКИ ДЕЙСТВИЙ ========== */
 .actions{
     display:flex;
     gap:12px;
@@ -383,12 +376,16 @@ h3{
     cursor: pointer;
     transition: opacity 0.2s;
     display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
 }
 .part-number-clickable:hover {
     opacity: 0.7;
+    background: #f0f4f9;
 }
 .part-number-clickable:active {
     opacity: 0.5;
+    background: #e2e8f0;
 }
 </style>
 </head>
@@ -421,10 +418,8 @@ h3{
     <!-- ОСНОВНОЙ БЛОК -->
     <div id="main-content" style="display:none;">
 
-        <!-- ЕДИНАЯ ПОДЛОЖКА ДЛЯ ФОРМЫ -->
         <div class="main-card">
 
-            <!-- Шапка с пользователем -->
             <div class="user-bar" id="user-info" style="display:none;">
                 <div class="user-avatar">
                     <img id="user-pic" src="" alt="Profile">
@@ -436,7 +431,6 @@ h3{
                 <button id="logout-btn" onclick="signOut()">Выйти</button>
             </div>
 
-            <!-- Форма перемещения -->
             <input id="partNumber" placeholder="Номер детали" autocomplete="off">
             <input id="quantity" type="number" placeholder="Количество" min="1" value="1">
             <select id="from">
@@ -453,7 +447,6 @@ h3{
 
         </div>
 
-        <!-- БЛОК ФИЛЬТРОВ И ПОИСКА -->
         <div class="filter-search-container">
             <div class="filter-section">
                 <div class="filter-group">
@@ -464,7 +457,6 @@ h3{
                     </select>
                 </div>
                 <div class="filter-group">
-                    <!-- Пустой фильтр для симметрии, можно добавить клубы -->
                 </div>
             </div>
             <div class="search-wrapper">
@@ -475,7 +467,6 @@ h3{
             </div>
         </div>
 
-        <!-- СПИСОК ИСТОРИИ (заголовок убран) -->
         <div id="list" class="history-list"></div>
 
     </div>
@@ -503,16 +494,28 @@ function showToast(message, isError = false) {
     setTimeout(() => toast.remove(), 3000);
 }
 
+// Функция копирования в буфер обмена
 function copyToClipboard(text) {
+    if (!text) {
+        showToast('❌ Нет данных для копирования', true);
+        return;
+    }
+    
+    // Современный способ
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
-            .then(() => showToast(`✅ Номер "${text}" скопирован в буфер`))
-            .catch(() => fallbackCopy(text));
+            .then(() => {
+                showToast(`✅ Номер "${text}" скопирован в буфер`);
+            })
+            .catch(() => {
+                fallbackCopy(text);
+            });
     } else {
         fallbackCopy(text);
     }
 }
 
+// Резервный способ копирования
 function fallbackCopy(text) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -570,21 +573,18 @@ async function loadAsync(){
     }
 }
 
-// ===== ФИЛЬТРАЦИЯ И ПОИСК =====
 function applyFiltersAndRender() {
     const statusFilter = document.getElementById('statusFilter').value;
     const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
 
     filteredTransfers = [...allTransfers];
 
-    // Фильтр по статусу
     if (statusFilter === 'open') {
         filteredTransfers = filteredTransfers.filter(t => t.status === 'open');
     } else if (statusFilter === 'closed') {
         filteredTransfers = filteredTransfers.filter(t => t.status === 'closed');
     }
 
-    // Поиск по номеру детали
     if (searchText) {
         filteredTransfers = filteredTransfers.filter(t => 
             (t.partNumber || '').toLowerCase().includes(searchText)
@@ -706,12 +706,12 @@ function render(transfers){
         const table = document.createElement('table');
         table.className = 'info-table';
         
-        // Номер детали с кликом для копирования
-        const partNumberDisplay = document.createElement('span');
-        partNumberDisplay.className = 'part-number-clickable';
-        partNumberDisplay.textContent = transfer.partNumber || '—';
-        partNumberDisplay.title = 'Кликните для копирования номера';
-        partNumberDisplay.onclick = (e) => {
+        // Создаем элемент для номера детали с обработчиком клика
+        const partNumberSpan = document.createElement('span');
+        partNumberSpan.className = 'part-number-clickable';
+        partNumberSpan.textContent = transfer.partNumber || '—';
+        partNumberSpan.title = 'Кликните для копирования номера';
+        partNumberSpan.onclick = function(e) {
             e.stopPropagation();
             if (transfer.partNumber) {
                 copyToClipboard(transfer.partNumber);
@@ -719,10 +719,7 @@ function render(transfers){
         };
         
         const rowsData = [
-            { 
-                label: 'Номер детали', 
-                value: transfer.partNumber ? partNumberDisplay.outerHTML : '—'
-            },
+            { label: 'Номер детали', value: partNumberSpan },
             { label: 'Количество', value: `${transfer.quantity} шт.` },
             { label: 'Дата создания', value: dateStr },
             { label: 'Откуда', value: transfer.from || '—' },
@@ -739,13 +736,15 @@ function render(transfers){
             const tdLabel = document.createElement('td');
             tdLabel.textContent = rowItem.label;
             const tdValue = document.createElement('td');
+            
             if (rowItem.label === 'Статус') {
                 tdValue.innerHTML = rowItem.value;
             } else if (rowItem.label === 'Номер детали') {
-                tdValue.innerHTML = rowItem.value;
+                tdValue.appendChild(rowItem.value);
             } else {
                 tdValue.textContent = rowItem.value;
             }
+            
             tr.appendChild(tdLabel);
             tr.appendChild(tdValue);
             table.appendChild(tr);
@@ -912,6 +911,7 @@ window.signOut = signOut;
 window.handleCredentialResponse = handleCredentialResponse;
 window.applyFiltersAndRender = applyFiltersAndRender;
 window.clearSearchField = clearSearchField;
+window.copyToClipboard = copyToClipboard;
 
 window.addEventListener('load', function() {
     const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
@@ -920,7 +920,6 @@ window.addEventListener('load', function() {
     const nameSheet = localStorage.getItem('userNameFromSheet');
     const pic = localStorage.getItem('userPic');
     
-    // Навешиваем обработчики фильтров
     document.getElementById('statusFilter').addEventListener('change', applyFiltersAndRender);
     document.getElementById('searchInput').addEventListener('keyup', applyFiltersAndRender);
     document.getElementById('clearSearchBtn').addEventListener('click', clearSearchField);
